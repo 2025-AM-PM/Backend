@@ -1,0 +1,101 @@
+name: CI & CD
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [test]
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  # ───────────── 1) 테스트 ─────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - run: ./gradlew test
+
+  # ───────────── 2) 빌드 & 배포 ─────────────
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test')) ||
+      (github.event_name == 'pull_request' &&
+       github.base_ref == 'test')
+
+    steps:
+      # 소스 체크아웃 + JDK 세팅
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # JAR 빌드
+      - name: Build bootJar
+        run: ./gradlew bootJar -x test
+
+      # ── [NEW] 빌드 결과물 위치 자동 탐색 후 app.jar 로 복사 ──
+      - name: Prepare artifact
+        id: prep
+        run: |
+          JAR_PATH=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
+          if [[ -z "$JAR_PATH" ]]; then
+            echo "❌ JAR 파일을 찾지 못했습니다"; exit 1
+          fi
+          echo "Found JAR: $JAR_PATH"
+          cp "$JAR_PATH" app.jar
+
+      # 브랜치별 서버 정보 + 멀티라인 SSH 키를 $GITHUB_ENV 로
+      - name: Set deploy env vars
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "HOST=${{ secrets.OCI_HOST }}"  >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_USER }}"  >> $GITHUB_ENV
+            echo "APP=spring-main"               >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                  >> $GITHUB_ENV
+            echo "${{ secrets.OCI_SSH_KEY }}"    >> $GITHUB_ENV
+            echo "EOF"                           >> $GITHUB_ENV
+          else
+            echo "HOST=${{ secrets.OCI_TEST_HOST }}"  >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_TEST_USER }}"  >> $GITHUB_ENV
+            echo "APP=spring-test"                    >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                       >> $GITHUB_ENV
+            echo "${{ secrets.OCI_TEST_SSH_KEY }}"    >> $GITHUB_ENV
+            echo "EOF"                                >> $GITHUB_ENV
+          fi
+
+      # ── JAR(app.jar) + Dockerfile 서버로 복사 ──
+      - name: Copy artifacts to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USER }}
+          key: ${{ env.SSH_KEY }}
+          source: "app.jar,Dockerfile"
+          target: /home/${{ env.USER }}/app/
+
+      # ── SSH 접속 후 컨테이너 교체 ──
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USER }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd ~/app
+
+            docker stop "${{ env.APP }}" || true
+            docker rm   "${{ env.APP }}" || true
+
+            docker build -t "${{ env.APP }}" .
+            docker run -d -p 8080:8080 --name "${{ env.APP }}" "${{ env.APP }}"
