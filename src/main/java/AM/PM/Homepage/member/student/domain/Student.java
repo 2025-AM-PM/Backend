@@ -4,8 +4,18 @@ import AM.PM.Homepage.util.constant.StudentRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Builder
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Student {
 
     @Id
@@ -13,15 +23,18 @@ public class Student {
     private Long id;
 
     @Column(name = "student_number", unique = true)
-    @Min(9) @Max(9)
-    private Integer studentNumber;
+    @Pattern(regexp = "^[0-9]{6}$")
+    private String studentNumber;
 
     @Column(name = "student_role", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private StudentRole studentRole;
+    private String studentRole;
 
     @Column(name = "student_name")
     private String studentName;
+
+    @Column(name = "student_password")
+    private String password
+            ;
 
     @OneToOne
     @JoinColumn(name = "baekjoon_tier_id")

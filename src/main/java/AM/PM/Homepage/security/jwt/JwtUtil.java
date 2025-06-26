@@ -1,0 +1,72 @@
+package AM.PM.Homepage.security.jwt;
+
+import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
+import AM.PM.Homepage.util.constant.JwtTokenType;
+import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Objects;
+
+public class JwtUtil {
+
+    private final SecretKey secretKey;
+
+    private final static String JWT_PAYLOAD_CATEGORY = "category";
+    private final static String JWT_PAYLOAD_USERNAME = "username";
+    private final static String JWT_PAYLOAD_ROLE = "role";
+
+
+    public JwtUtil(@Value("${spring.jwt.secret}") String secretKey) {
+        this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
+    }
+
+    public String getUsername(String token) {
+
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_USERNAME, String.class);
+    }
+
+    public String getRole(String token) {
+
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_ROLE, String.class);
+    }
+
+    public String getCategory(String token) {
+
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_CATEGORY, String.class);
+    }
+
+    public void isExpired(String token) {
+        Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration();
+    }
+
+    public boolean parseAccessToken(String token) {
+        return Objects.equals(getCategory(token), JwtTokenType.ACCESS_TOKEN.getValue());
+    }
+
+    public String generateRefreshToken(String username, String role) {
+        return generateToken(JwtTokenType.REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
+    }
+
+    public String generateAccessToken(String username, String role) {
+        return generateToken(JwtTokenType.ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
+    }
+
+    private String generateToken(String category, String username, String role, long expirationTime) {
+
+        return Jwts.builder()
+                .claim(JWT_PAYLOAD_CATEGORY, category)
+                .claim(JWT_PAYLOAD_USERNAME, username)
+                .claim(JWT_PAYLOAD_ROLE, role)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(secretKey)
+                .compact();
+    }
+
+}
