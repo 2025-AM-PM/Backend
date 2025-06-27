@@ -19,7 +19,9 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-      - run: ./gradlew test
+
+      # test 프로파일 활성화
+      - run: ./gradlew test -Dspring.profiles.active=test
 
   # ───────────── 2) 빌드 & 배포 ─────────────
   deploy:
@@ -58,27 +60,27 @@ jobs:
       - name: Set deploy env vars
         run: |
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "HOST=${{ secrets.OCI_HOST }}"              >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_USER }}"              >> $GITHUB_ENV
-            echo "APP=spring-main"                           >> $GITHUB_ENV
-            echo "PROFILE=main"                              >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_HOST }}"                >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_USER }}"                >> $GITHUB_ENV
+            echo "APP=spring-main"                             >> $GITHUB_ENV
+            echo "PROFILE=main"                                >> $GITHUB_ENV
             echo "DB_USERNAME=${{ secrets.DB_USERNAME_MAIN }}" >> $GITHUB_ENV
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_MAIN }}" >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
-            echo "${{ secrets.OCI_SSH_KEY }}"                >> $GITHUB_ENV
-            echo "EOF"                                       >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                                >> $GITHUB_ENV
+            echo "${{ secrets.OCI_SSH_KEY }}"                  >> $GITHUB_ENV
+            echo "EOF"                                         >> $GITHUB_ENV
           else
-            echo "HOST=${{ secrets.OCI_TEST_HOST }}"         >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_TEST_USER }}"         >> $GITHUB_ENV
-            echo "APP=spring-test"                           >> $GITHUB_ENV
-            echo "PROFILE=test"                              >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_TEST_HOST }}"           >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_TEST_USER }}"           >> $GITHUB_ENV
+            echo "APP=spring-test"                             >> $GITHUB_ENV
+            echo "PROFILE=test"                                >> $GITHUB_ENV
             echo "DB_USERNAME=${{ secrets.DB_USERNAME_TEST }}" >> $GITHUB_ENV
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_TEST }}" >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
-            echo "${{ secrets.OCI_TEST_SSH_KEY }}"           >> $GITHUB_ENV
-            echo "EOF"                                       >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                                >> $GITHUB_ENV
+            echo "${{ secrets.OCI_TEST_SSH_KEY }}"             >> $GITHUB_ENV
+            echo "EOF"                                         >> $GITHUB_ENV
           fi
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"        >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"          >> $GITHUB_ENV
 
       # 서버로 JAR & Dockerfile 전송
       - name: Copy artifacts to server
