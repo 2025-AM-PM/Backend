@@ -2,6 +2,7 @@ package AM.PM.Homepage.util.constant;
 
 import lombok.Getter;
 
+
 @Getter
 public enum JwtTokenType {
 

@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -29,11 +31,11 @@ public class JwtFilter extends OncePerRequestFilter {
         String accessToken = request.getHeader(JwtTokenType.ACCESS_TOKEN.getValue());
 
         // 토큰이 없다면 다음 필터로 넘김
-        if (!parseHeaderToken(accessToken)) {
+        if (accessToken == null) {
             filterChain.doFilter(request, response);
             return;
         }
-
+        log.info("뭐가 문제일까");
         // 토큰 만료 여부 확인, 만료시 다음 필터로 넘기지 않음
         try {
             jwtUtil.isExpired(accessToken);
@@ -76,7 +78,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private static boolean parseHeaderToken(String accessToken) {
-        return accessToken == null || accessToken.startsWith("bearer ");
+        return accessToken != null && accessToken.startsWith("Bearer ");
     }
 
 

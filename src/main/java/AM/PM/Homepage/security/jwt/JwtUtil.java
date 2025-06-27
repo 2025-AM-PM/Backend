@@ -8,11 +8,15 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Objects;
+import AM.PM.Homepage.util.constant.JwtTokenType;
+import org.springframework.stereotype.Component;
 
+import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
+import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
+
+@Component
 public class JwtUtil {
 
     private final SecretKey secretKey;
@@ -46,15 +50,15 @@ public class JwtUtil {
     }
 
     public boolean parseAccessToken(String token) {
-        return Objects.equals(getCategory(token), JwtTokenType.ACCESS_TOKEN.getValue());
+        return Objects.equals(getCategory(token), "access");
     }
 
     public String generateRefreshToken(String username, String role) {
-        return generateToken(JwtTokenType.REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
+        return generateToken(REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
     }
 
     public String generateAccessToken(String username, String role) {
-        return generateToken(JwtTokenType.ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
+        return generateToken(ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
     }
 
     private String generateToken(String category, String username, String role, long expirationTime) {

@@ -33,8 +33,7 @@ public class Student {
     private String studentName;
 
     @Column(name = "student_password")
-    private String password
-            ;
+    private String password;
 
     @OneToOne
     @JoinColumn(name = "baekjoon_tier_id")
