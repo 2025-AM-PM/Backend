@@ -32,7 +32,7 @@ jobs:
        github.base_ref == 'test')
 
     steps:
-      # 소스 체크아웃 + JDK 세팅
+      # Checkout + Java 설정
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
         with:
@@ -43,7 +43,7 @@ jobs:
       - name: Build bootJar
         run: ./gradlew bootJar -x test
 
-      # ── [NEW] 빌드 결과물 위치 자동 탐색 후 app.jar 로 복사 ──
+      # JAR 복사
       - name: Prepare artifact
         id: prep
         run: |
@@ -54,26 +54,33 @@ jobs:
           echo "Found JAR: $JAR_PATH"
           cp "$JAR_PATH" app.jar
 
-      # 브랜치별 서버 정보 + 멀티라인 SSH 키를 $GITHUB_ENV 로
+      # 브랜치별 환경변수 설정
       - name: Set deploy env vars
         run: |
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "HOST=${{ secrets.OCI_HOST }}"  >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_USER }}"  >> $GITHUB_ENV
-            echo "APP=spring-main"               >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                  >> $GITHUB_ENV
-            echo "${{ secrets.OCI_SSH_KEY }}"    >> $GITHUB_ENV
-            echo "EOF"                           >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_HOST }}"              >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_USER }}"              >> $GITHUB_ENV
+            echo "APP=spring-main"                           >> $GITHUB_ENV
+            echo "PROFILE=main"                              >> $GITHUB_ENV
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME_MAIN }}" >> $GITHUB_ENV
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_MAIN }}" >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
+            echo "${{ secrets.OCI_SSH_KEY }}"                >> $GITHUB_ENV
+            echo "EOF"                                       >> $GITHUB_ENV
           else
-            echo "HOST=${{ secrets.OCI_TEST_HOST }}"  >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_TEST_USER }}"  >> $GITHUB_ENV
-            echo "APP=spring-test"                    >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                       >> $GITHUB_ENV
-            echo "${{ secrets.OCI_TEST_SSH_KEY }}"    >> $GITHUB_ENV
-            echo "EOF"                                >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_TEST_HOST }}"         >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_TEST_USER }}"         >> $GITHUB_ENV
+            echo "APP=spring-test"                           >> $GITHUB_ENV
+            echo "PROFILE=test"                              >> $GITHUB_ENV
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME_TEST }}" >> $GITHUB_ENV
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_TEST }}" >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
+            echo "${{ secrets.OCI_TEST_SSH_KEY }}"           >> $GITHUB_ENV
+            echo "EOF"                                       >> $GITHUB_ENV
           fi
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"        >> $GITHUB_ENV
 
-      # ── JAR(app.jar) + Dockerfile 서버로 복사 ──
+      # 서버로 JAR & Dockerfile 전송
       - name: Copy artifacts to server
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -83,7 +90,7 @@ jobs:
           source: "app.jar,Dockerfile"
           target: /home/${{ env.USER }}/app/
 
-      # ── SSH 접속 후 컨테이너 교체 ──
+      # SSH 배포: 컨테이너 재시작
       - name: Deploy on server
         uses: appleboy/ssh-action@v1
         with:
@@ -98,4 +105,14 @@ jobs:
             docker rm   "${{ env.APP }}" || true
 
             docker build -t "${{ env.APP }}" .
-            docker run -d -p 8080:8080 --name "${{ env.APP }}" "${{ env.APP }}"
+
+            docker run -d \
+              -p 8080:8080 \
+              --name "${{ env.APP }}" \
+              -e SPRING_PROFILES_ACTIVE=${{ env.PROFILE }} \
+              -e DB_USERNAME_MAIN=${{ env.DB_USERNAME }} \
+              -e DB_PASSWORD_MAIN=${{ env.DB_PASSWORD }} \
+              -e DB_USERNAME_TEST=${{ env.DB_USERNAME }} \
+              -e DB_PASSWORD_TEST=${{ env.DB_PASSWORD }} \
+              -e JWT_SECRET=${{ env.JWT_SECRET }} \
+              "${{ env.APP }}"
