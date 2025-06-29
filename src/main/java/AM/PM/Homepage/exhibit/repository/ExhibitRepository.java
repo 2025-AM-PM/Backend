@@ -6,6 +6,4 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExhibitRepository extends JpaRepository<Exhibit, Long> {
-
-    Page<Exhibit> findByPage(Pageable pageable);
 }

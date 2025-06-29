@@ -18,7 +18,7 @@ public class ExhibitService {
     private final ExhibitImageRepository exhibitImageRepository;
 
     public Page<ExhibitSummaryResponse> findAllExhibit(Pageable pageable) {
-        Page<Exhibit> exhibits = exhibitRepository.findByPage(pageable);
+        Page<Exhibit> exhibits = exhibitRepository.findAll(pageable);
         return exhibits.map(ExhibitSummaryResponse::from);
     }
 
