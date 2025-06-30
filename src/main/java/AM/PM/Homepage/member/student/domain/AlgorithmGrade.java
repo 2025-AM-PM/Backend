@@ -3,7 +3,7 @@ package AM.PM.Homepage.member.student.domain;
 import jakarta.persistence.*;
 
 @Entity
-public class BaekjoonTier {
+public class AlgorithmGrade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
