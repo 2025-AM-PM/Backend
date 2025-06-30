@@ -2,16 +2,14 @@ package AM.PM.Homepage.member.student.domain;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Builder
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 public class Student {
 
     @Id
@@ -33,6 +31,10 @@ public class Student {
 
     @OneToOne
     @JoinColumn(name = "baekjoon_tier_id")
-    private AlgorithmGrade baekjoonTier;
+    private AlgorithmProfile baekjoonTier;
+
+    @OneToOne
+    @JoinColumn(name = "verification_code_id")
+    private VerificationToken token;
 
 }

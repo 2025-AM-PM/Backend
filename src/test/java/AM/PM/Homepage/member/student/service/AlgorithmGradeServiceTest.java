@@ -1,13 +1,10 @@
 package AM.PM.Homepage.member.student.service;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import reactor.test.StepVerifier;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.*;
 
 
@@ -15,7 +12,7 @@ import static org.assertj.core.api.Assertions.*;
 class AlgorithmGradeServiceTest {
 
     @Autowired
-    private AlgorithmGradeService service;
+    private AlgorithmProfileService service;
 
 
     @Test
@@ -24,16 +21,28 @@ class AlgorithmGradeServiceTest {
 
         String username = "imnotyourocean";
 
-        var solvedAcMono = service.getSolvedAcInformation(username);
+        var solvedAcMono = service.fetchSolvedAcInformation(username);
 
-        // StepVerifier를 사용하여 테스트 진행
-        StepVerifier.create(solvedAcMono)
-                .assertNext(solved -> {
-                    assertThat(solved.getSolvedCount()).isEqualTo(6);
-                    assertThat(solved.getTier()).isEqualTo(1);
-                    assertThat(solved.getRating()).isEqualTo(46);
-                })
-                .verifyComplete();
+        assertThat(solvedAcMono.getSolvedCount()).isEqualTo(6);
+        assertThat(solvedAcMono.getTier()).isEqualTo(1);
+        assertThat(solvedAcMono.getRating()).isEqualTo(46);
+
+    }
+
+    @Test
+    @DisplayName("Solved.ac API를 사용하여 사용자 인증을 위해 자기소개란의 토큰을 받아온다.")
+    void useSolvedAcApi_For_GetUserBio() {
+
+        String username = "imnotyourocean";
+
+        var solvedAcMono = service.fetchSolvedBio(username);
+
+        // 일단은 null값
+        assertThat(solvedAcMono.getVerificationToken()).isNull();
+
+        // 추후 추가 예정
+//        assertThat(solvedAcMono.getVerificationToken()).isEqualTo("token value");
+
     }
 
 }
