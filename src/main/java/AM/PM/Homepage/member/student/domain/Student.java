@@ -29,12 +29,14 @@ public class Student {
     @Column(name = "student_password")
     private String password;
 
-    @OneToOne
-    @JoinColumn(name = "baekjoon_tier_id")
+    @OneToOne(mappedBy = "student", orphanRemoval = true, cascade = CascadeType.ALL)
     private AlgorithmProfile baekjoonTier;
 
-    @OneToOne
-    @JoinColumn(name = "verification_code_id")
+    @OneToOne(mappedBy = "student", orphanRemoval = true, cascade = CascadeType.ALL)
     private VerificationToken token;
 
+    public void linkAlgorithmProfile(AlgorithmProfile profile) {
+        this.baekjoonTier = profile;
+        profile.linkStudent(this); // 양방향 연관관계 설정을 위해 상대방에게도 자신을 알려준다.
+    }
 }

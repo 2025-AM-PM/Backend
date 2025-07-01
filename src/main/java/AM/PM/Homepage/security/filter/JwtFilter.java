@@ -42,7 +42,7 @@ public class JwtFilter extends OncePerRequestFilter {
             jwtUtil.isExpired(token);
         } catch (ExpiredJwtException e) {
             //response body
-            sendUnauthorizedResponse(response);
+            sendUnauthorizedResponse(response); // server 에서 401 status code -> reissueRefreshToken
             return;
         }
 

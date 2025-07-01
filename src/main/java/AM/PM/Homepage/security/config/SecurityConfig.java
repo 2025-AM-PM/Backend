@@ -3,10 +3,13 @@ package AM.PM.Homepage.security.config;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
+import AM.PM.Homepage.member.student.service.RefreshTokenService;
+import AM.PM.Homepage.member.student.service.StudentService;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,16 +38,18 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
-    private final RefreshTokenRepository refreshRepository;
-    private final StudentRepository repository;
+    private final StudentService studentService;
+    private final RefreshTokenService refreshTokenService;
+    private final CookieProvider provider;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, RefreshTokenRepository refreshRepository, StudentRepository repository) {
-
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentService studentService, RefreshTokenService refreshTokenService, CookieProvider provider) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
-        this.refreshRepository = refreshRepository;
-        this.repository = repository;
+        this.studentService = studentService;
+        this.refreshTokenService = refreshTokenService;
+        this.provider = provider;
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -59,7 +64,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
 
         http
                 .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
@@ -88,21 +93,20 @@ public class SecurityConfig {
 
         //From 로그인 방식 disable
         http
-                .formLogin((auth) -> auth.disable());
+                .formLogin(AbstractHttpConfigurer::disable);
 
         //http basic 인증 방식 disable
         http
-                .httpBasic((auth) -> auth.disable());
+                .httpBasic(AbstractHttpConfigurer::disable);
 
 
         http
                 .authorizeHttpRequests((auth) -> auth
                         .requestMatchers("/login", "/", "/join").permitAll()
-                        .requestMatchers("/admin").hasRole("ADMIN")
                         .requestMatchers("/reissue").permitAll()
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshRepository, repository), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentService, cookieProvider), UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
 
