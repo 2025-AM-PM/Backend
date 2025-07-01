@@ -1,16 +1,21 @@
 package AM.PM.Homepage.member.student.service;
 
+import AM.PM.Homepage.member.student.domain.RefreshToken;
+import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
+import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
+import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
-import javax.naming.NameNotFoundException;
+import java.util.Date;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
@@ -19,10 +24,12 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final StudentRepository studentRepository;
+    private final CookieProvider provider;
     private final JwtUtil jwtUtil;
 
 
-    public void reissuedAccessToken(HttpServletRequest request, HttpServletResponse response) {
+    public void reissuedAccessToken(Long studentId, HttpServletRequest request, HttpServletResponse response) {
 
         String refreshToken = null;
         Cookie[] cookies = request.getCookies();
@@ -53,18 +60,31 @@ public class RefreshTokenService {
         String newAccessToken = jwtUtil.generateAccessToken(username, role);
         String newRefreshToken = jwtUtil.generateRefreshToken(username, role);
 
+        Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
+
+        deleteRefreshToken(refreshToken);
+        registerRefreshToken(newRefreshToken, student);
+        setResponseStatus(response, newAccessToken, newRefreshToken);
+    }
+
+    private void setResponseStatus(HttpServletResponse response, String newAccessToken, String newRefreshToken) {
         response.setHeader(AUTHORIZATION, newAccessToken);
-        response.addCookie(createCookie("refresh", newRefreshToken));
+        response.addCookie(provider.createCookie("refresh", newRefreshToken));
     }
 
-    private Cookie createCookie(String key, String value) {
-
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(24*60*60);
-        //cookie.setSecure(true);
-        //cookie.setPath("/");
-        cookie.setHttpOnly(true);
-
-        return cookie;
+    private void deleteRefreshToken(String refreshToken) {
+        refreshTokenRepository.deleteRefreshTokenByRefreshToken(refreshToken);
     }
+
+    public void registerRefreshToken(String newRefreshToken, Student student) {
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .refreshToken(newRefreshToken)
+                .expiration(new Date(System.currentTimeMillis() + JwtTokenExpirationTime.refreshExpirationHours).toString())
+                .student(student)
+                .build();
+
+        refreshTokenRepository.save(refreshTokenEntity);
+    }
+
+
 }
