@@ -2,6 +2,7 @@ package AM.PM.Homepage.security;
 
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,15 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
-        Student userData = userRepository.findByStudentName(username);
-
-        if (userData != null) {
-
-            return new UserAuth(userData);
-        }
-
-
-        return null;
+        Student userData = userRepository.findByStudentNumber(username).orElseThrow(EntityNotFoundException::new);
+        return new UserAuth(userData);
     }
 }

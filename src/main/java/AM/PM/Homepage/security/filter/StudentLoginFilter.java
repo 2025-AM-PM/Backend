@@ -8,6 +8,7 @@ import AM.PM.Homepage.member.student.request.AuthenticationRequest;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -30,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.UUID;
 
 import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
@@ -62,8 +62,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
 
-//        setDetails(request, authRequest);
-        log.info("로그인 잘 진행중");
+        setDetails(request, authRequest);
         return authenticationManager.authenticate(authRequest);
     }
 
@@ -71,18 +70,16 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
 
-        String name = authResult.getName();
+        String studentNumber = authResult.getName();
         String role = getAuthority(authResult);
-        log.info("어디서 오류지?");
-        String accessToken = jwtUtil.generateAccessToken(name, role);
-        String refreshToken = jwtUtil.generateRefreshToken(name, role);
 
-        Student byStudentName = studentRepository.findByStudentName(name);
+        String accessToken = jwtUtil.generateAccessToken(studentNumber, role);
+        String refreshToken = jwtUtil.generateRefreshToken(studentNumber, role);
+
+        Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
 
         storeRefreshToken(refreshToken, byStudentName);
-        log.info("어디서 오류지?>?");
         setResponseStatus(response, accessToken, refreshToken);
-        log.info("어디서 오류지?_?!");
     }
 
 

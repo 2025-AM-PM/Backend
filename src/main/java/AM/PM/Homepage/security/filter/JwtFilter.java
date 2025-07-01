@@ -3,7 +3,6 @@ package AM.PM.Homepage.security.filter;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import AM.PM.Homepage.util.constant.JwtTokenType;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,6 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
 @RequiredArgsConstructor
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
@@ -27,34 +28,26 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // 헤더에서 access키에 담긴 토큰을 꺼냄
-        String accessToken = request.getHeader(JwtTokenType.ACCESS_TOKEN.getValue());
 
-        // 토큰이 없다면 다음 필터로 넘김
-        if (accessToken == null) {
+        String authorization = request.getHeader(AUTHORIZATION);
+
+        if (!parseHeaderToken(authorization)) {
             filterChain.doFilter(request, response);
             return;
         }
-        log.info("뭐가 문제일까");
-        // 토큰 만료 여부 확인, 만료시 다음 필터로 넘기지 않음
+
+        String token = authorization.split(" ")[1];
+
         try {
-            jwtUtil.isExpired(accessToken);
+            jwtUtil.isExpired(token);
         } catch (ExpiredJwtException e) {
             //response body
-            sendUnauthorizedResponse(response, "access token expired");
+            sendUnauthorizedResponse(response);
             return;
         }
 
-        // 토큰이 access인지 확인 (발급시 페이로드에 명시)
-
-        if (!jwtUtil.parseAccessToken(accessToken)) {
-            sendUnauthorizedResponse(response, "invalid access token");
-            return;
-        }
-
-        // username, role 값을 획득
-        String username = jwtUtil.getUsername(accessToken);
-        String role = jwtUtil.getRole(accessToken);
+        String username = jwtUtil.getUsername(token);
+        String role = jwtUtil.getRole(token);
 
         Student student = Student.builder()
                 .studentName(username)
@@ -69,9 +62,9 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private static void sendUnauthorizedResponse(HttpServletResponse response, String accessTokenExpired) throws IOException {
+    private static void sendUnauthorizedResponse(HttpServletResponse response) throws IOException {
         PrintWriter writer = response.getWriter();
-        writer.print(accessTokenExpired);
+        writer.print("access token expired");
 
         //response status code
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

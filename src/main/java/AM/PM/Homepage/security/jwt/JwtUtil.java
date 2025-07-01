@@ -1,7 +1,6 @@
 package AM.PM.Homepage.security.jwt;
 
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
-import AM.PM.Homepage.util.constant.JwtTokenType;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -10,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Objects;
-import AM.PM.Homepage.util.constant.JwtTokenType;
+
 import org.springframework.stereotype.Component;
 
 import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
