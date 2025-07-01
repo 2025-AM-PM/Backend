@@ -1,21 +1,15 @@
 package AM.PM.Homepage.member.student.domain;
 
-import AM.PM.Homepage.util.constant.StudentRole;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Builder
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 public class Student {
 
     @Id
@@ -37,6 +31,10 @@ public class Student {
 
     @OneToOne
     @JoinColumn(name = "baekjoon_tier_id")
-    private BaekjoonTier baekjoonTier;
+    private AlgorithmProfile baekjoonTier;
+
+    @OneToOne
+    @JoinColumn(name = "verification_code_id")
+    private VerificationToken token;
 
 }

@@ -32,4 +32,9 @@ public class UserAuth implements UserDetails {
     public String getUsername() {
         return student.getStudentName();
     }
+
+    public Long getId() {
+        return student.getId();
+    }
+
 }
