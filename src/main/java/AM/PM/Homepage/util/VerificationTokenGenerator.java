@@ -1,13 +1,13 @@
-package AM.PM.Homepage.member.student.service;
+package AM.PM.Homepage.util;
 
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
-public class VerificationTokenService {
+public final class VerificationTokenGenerator {
 
-    public String issuedVerificationToken() {
+    public static String issuedVerificationToken() {
         return UUID.randomUUID().toString();
     }
 

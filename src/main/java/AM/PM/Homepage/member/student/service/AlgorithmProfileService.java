@@ -2,8 +2,10 @@ package AM.PM.Homepage.member.student.service;
 
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
+import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
 import AM.PM.Homepage.member.student.response.SolvedAcResponse;
 import AM.PM.Homepage.member.student.response.VerificationTokenResponse;
+import AM.PM.Homepage.util.VerificationTokenGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -22,6 +24,10 @@ public class AlgorithmProfileService {
         this.restClient = RestClient.builder()
                 .baseUrl(SOLVED_AC_URL)
                 .build();
+    }
+
+    public boolean confirmVerification(VerificationCodeRequest verificationCodeRequest) {
+        return VerificationTokenGenerator.issuedVerificationToken().equals(verificationCodeRequest.getVerificationCode());
     }
 
     public SolvedAcResponse fetchSolvedAcInformation(String username) {
