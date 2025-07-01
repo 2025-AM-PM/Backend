@@ -34,6 +34,7 @@ dependencies {
 
 	runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11'
 	runtimeOnly 'com.h2database:h2'
+	implementation("com.mysql:mysql-connector-j:9.2.0")
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'

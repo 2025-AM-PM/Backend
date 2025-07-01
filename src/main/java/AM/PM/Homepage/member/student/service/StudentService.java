@@ -26,4 +26,8 @@ public class StudentService {
     }
 
 
+    public Student findByStudentNumber(String studentNumber) {
+        return studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
+    }
+
 }
