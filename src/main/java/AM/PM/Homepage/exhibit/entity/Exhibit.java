@@ -1,6 +1,6 @@
 package AM.PM.Homepage.exhibit.entity;
 
-import AM.PM.Homepage.config.base.BaseEntity;
+import AM.PM.Homepage.common.entity.BaseEntity;
 import AM.PM.Homepage.member.student.domain.Student;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
@@ -50,6 +51,7 @@ public class Exhibit extends BaseEntity {
     @ColumnDefault("0")
     private Integer likes;
 
+    @Getter
     @Column(name = "exhibit_images")
     @OneToMany(mappedBy = "exhibit", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExhibitImage> images = new ArrayList<>();
@@ -57,6 +59,16 @@ public class Exhibit extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "student_id")
     private Student student;
+
+    @Builder
+    public Exhibit(String title, String description, String exhibitUrl, String githubUrl, Student student) {
+        this.title = title;
+        this.description = description;
+        this.exhibitUrl = exhibitUrl;
+        this.githubUrl = githubUrl;
+        this.student = student;
+        this.likes = 0;
+    }
 
     public String getStudentName() {
         return student.getStudentName();
@@ -66,14 +78,22 @@ public class Exhibit extends BaseEntity {
         return student.getStudentNumber();
     }
 
-    public List<String> getImageUrls() {
+    public List<String> getAllImagePath() {
         return images.stream()
-                .map(ExhibitImage::getUploadImageUrl)
+                .map(ExhibitImage::getUploadImagePath)
                 .toList();
     }
 
-    public String getThumbnailUrl() {
-        return images.getFirst().getUploadImageUrl();
+    public String getThumbnailPath() {
+        return images.getFirst().getUploadImagePath();
+    }
+
+    public void addImage(ExhibitImage image) {
+        this.images.add(image);
+
+        if (image.getExhibit() != this) {
+            image.setExhibit(this);
+        }
     }
 }
 

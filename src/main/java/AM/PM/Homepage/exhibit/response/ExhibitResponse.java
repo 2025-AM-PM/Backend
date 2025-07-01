@@ -30,7 +30,7 @@ public class ExhibitResponse {
                 .exhibitUrl(exhibit.getExhibitUrl())
                 .githubUrl(exhibit.getGithubUrl())
                 .likes(exhibit.getLikes())
-                .imageUrls(exhibit.getImageUrls())
+                .imageUrls(exhibit.getAllImagePath())
                 .createdAt(exhibit.getCreatedAt())
                 .updatedAt(exhibit.getUpdatedAt())
                 .build();
