@@ -18,9 +18,9 @@ public class RefreshToken {
     @UuidGenerator
     private UUID id;
 
+    @MapsId
     @OneToOne
     @JoinColumn(name = "student_id")
-    @Builder.Default
     private Student student;
 
     private String refreshToken;

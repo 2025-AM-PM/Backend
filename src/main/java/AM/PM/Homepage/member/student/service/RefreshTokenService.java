@@ -5,6 +5,7 @@ import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
-import static AM.PM.Homepage.util.CookieProvider.createCookie;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Service
@@ -25,6 +25,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final StudentRepository studentRepository;
+    private final CookieProvider provider;
     private final JwtUtil jwtUtil;
 
 
@@ -68,7 +69,7 @@ public class RefreshTokenService {
 
     private void setResponseStatus(HttpServletResponse response, String newAccessToken, String newRefreshToken) {
         response.setHeader(AUTHORIZATION, newAccessToken);
-        response.addCookie(createCookie("refresh", newRefreshToken));
+        response.addCookie(provider.createCookie("refresh", newRefreshToken));
     }
 
     private void deleteRefreshToken(String refreshToken) {

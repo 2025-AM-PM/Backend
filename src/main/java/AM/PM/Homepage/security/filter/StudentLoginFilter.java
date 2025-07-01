@@ -5,6 +5,7 @@ import AM.PM.Homepage.member.student.request.AuthenticationRequest;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.member.student.service.StudentService;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static AM.PM.Homepage.util.CookieProvider.createCookie;
 import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 
@@ -39,6 +39,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final StudentService studentService;
+    private final CookieProvider provider;
 
 
     @Override
@@ -102,9 +103,9 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     }
 
 
-    private static void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
+    private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
         response.setHeader(ACCESS_TOKEN.getValue(), accessToken);
-        response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
+        response.addCookie(provider.createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
     }
 

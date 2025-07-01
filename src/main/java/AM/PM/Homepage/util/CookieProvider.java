@@ -1,16 +1,20 @@
 package AM.PM.Homepage.util;
 
 import jakarta.servlet.http.Cookie;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-public final class CookieProvider {
+@Component
+public class CookieProvider {
 
-    private final static int COOKIE_MAX_AGE = 24*60*60;
+    @Value("${spring.jwt.refresh-cookie.max.age.second}")
+    private static int COOKIE_MAX_AGE;
 
 
     private CookieProvider() {
     }
 
-    public static Cookie createCookie(String key, String value) {
+    public Cookie createCookie(String key, String value) {
 
         Cookie cookie = new Cookie(key, value);
         cookie.setMaxAge(COOKIE_MAX_AGE);
@@ -23,3 +27,5 @@ public final class CookieProvider {
 
 
 }
+
+

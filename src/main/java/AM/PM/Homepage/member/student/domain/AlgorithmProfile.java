@@ -1,11 +1,15 @@
 package AM.PM.Homepage.member.student.domain;
 
+import AM.PM.Homepage.member.student.response.SolvedAcResponse;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 @Entity
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class AlgorithmProfile {
 
     @Id
@@ -21,11 +25,22 @@ public class AlgorithmProfile {
     @Column(name = "backjoon_rating")
     private Integer rating;
 
+    @MapsId
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id")
+    private Student student;
 
-    @Builder
-    public AlgorithmProfile(Integer rating, Integer solvedCount, Integer tier) {
-        this.rating = rating;
-        this.solvedCount = solvedCount;
-        this.tier = tier;
+
+    public static AlgorithmProfile from(SolvedAcResponse solvedAcInformation, Student student) {
+        return AlgorithmProfile.builder()
+                .solvedCount(solvedAcInformation.getSolvedCount())
+                .rating(solvedAcInformation.getRating())
+                .tier(solvedAcInformation.getTier())
+                .student(student)
+                .build();
+    }
+
+    public void linkStudent(Student student) {
+        this.student = student;
     }
 }

@@ -9,6 +9,7 @@ import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,12 +40,14 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final StudentService studentService;
     private final RefreshTokenService refreshTokenService;
+    private final CookieProvider provider;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentService studentService, RefreshTokenService refreshTokenService) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentService studentService, RefreshTokenService refreshTokenService, CookieProvider provider) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
         this.studentService = studentService;
         this.refreshTokenService = refreshTokenService;
+        this.provider = provider;
     }
 
 
@@ -61,7 +64,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
 
         http
                 .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
@@ -103,7 +106,7 @@ public class SecurityConfig {
                         .requestMatchers("/reissue").permitAll()
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentService), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentService, cookieProvider), UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
 
