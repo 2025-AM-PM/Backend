@@ -22,12 +22,11 @@ public class AlgorithmProfile {
     @Column(name = "backjoon_solved_count")
     private Integer solvedCount;
 
-    @Column(name = "backjoon_rating")
+    @Column(name = "baekjoon_rating")
     private Integer rating;
 
     @MapsId
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id")
+    @OneToOne(mappedBy = "baekjoonTier", cascade = CascadeType.ALL, orphanRemoval = true)
     private Student student;
 
 
