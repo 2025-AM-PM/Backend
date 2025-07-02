@@ -25,17 +25,15 @@ public class AlgorithmProfile {
     @Column(name = "baekjoon_rating")
     private Integer rating;
 
-    @MapsId
-    @OneToOne(mappedBy = "baekjoonTier", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "baekjoonTier", orphanRemoval = true, cascade = CascadeType.ALL)
     private Student student;
 
 
-    public static AlgorithmProfile from(SolvedAcResponse solvedAcInformation, Student student) {
+    public static AlgorithmProfile from(SolvedAcResponse solvedAcInformation) {
         return AlgorithmProfile.builder()
                 .solvedCount(solvedAcInformation.getSolvedCount())
                 .rating(solvedAcInformation.getRating())
                 .tier(solvedAcInformation.getTier())
-                .student(student)
                 .build();
     }
 

@@ -44,6 +44,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    implementation 'org.apache.poi:poi-ooxml:5.4.0'
+
 }
 
 tasks.named('test') {

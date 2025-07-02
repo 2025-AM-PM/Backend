@@ -16,12 +16,7 @@ public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private Long id;
-
-    @MapsId
-    @OneToOne
-    @JoinColumn(name = "student_id")
-    private Student student;
+    private UUID id;
 
     private String refreshToken;
     private String expiration;

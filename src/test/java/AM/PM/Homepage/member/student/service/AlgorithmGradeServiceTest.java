@@ -38,7 +38,7 @@ class AlgorithmGradeServiceTest {
         var solvedAcMono = service.fetchSolvedBio(username);
 
         // 일단은 null값
-        assertThat(solvedAcMono.getVerificationToken()).isNull();
+        assertThat(solvedAcMono.getBio()).isEqualTo("565ab1aa-81cd-4a6d-b24d-2d30837ffbc9");
 
         // 추후 추가 예정
 //        assertThat(solvedAcMono.getVerificationToken()).isEqualTo("token value");

@@ -5,8 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class VerificationTokenResponse {
+public class VerificationCodeResponse {
 
-    private String verificationToken;
+    private String bio;
 
 }
