@@ -75,7 +75,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
         String refreshToken = jwtUtil.generateRefreshToken(byStudentName.getId(),studentNumber, role);
 
 
-        refreshTokenService.registerRefreshToken(refreshToken, byStudentName);
+        refreshTokenService.registerRefreshToken(refreshToken);
         setResponseStatus(response, accessToken, refreshToken);
     }
 

@@ -48,10 +48,6 @@ public class JwtUtil {
         Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration();
     }
 
-    public boolean parseAccessToken(String token) {
-        return Objects.equals(getCategory(token), "access");
-    }
-
     public String generateRefreshToken(Long id, String username, String role) {
         return generateToken(id, REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
     }

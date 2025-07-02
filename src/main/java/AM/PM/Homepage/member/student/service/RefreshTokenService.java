@@ -63,7 +63,7 @@ public class RefreshTokenService {
 
 
         deleteRefreshToken(refreshToken);
-        registerRefreshToken(newRefreshToken, student);
+        registerRefreshToken(newRefreshToken);
         setResponseStatus(response, newAccessToken, newRefreshToken);
     }
 
@@ -76,11 +76,10 @@ public class RefreshTokenService {
         refreshTokenRepository.deleteRefreshTokenByRefreshToken(refreshToken);
     }
 
-    public void registerRefreshToken(String newRefreshToken, Student student) {
+    public void registerRefreshToken(String newRefreshToken) {
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                 .refreshToken(newRefreshToken)
                 .expiration(new Date(System.currentTimeMillis() + JwtTokenExpirationTime.refreshExpirationHours).toString())
-                .student(student)
                 .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
