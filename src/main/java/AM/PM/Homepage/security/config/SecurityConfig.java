@@ -2,12 +2,12 @@ package AM.PM.Homepage.security.config;
 
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
-import AM.PM.Homepage.member.student.service.StudentService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,8 +22,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.Collections;
-
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
@@ -34,7 +32,9 @@ public class SecurityConfig {
     private final RefreshTokenService refreshTokenService;
     private final CookieProvider provider;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentRepository studentRepository, RefreshTokenService refreshTokenService, CookieProvider provider) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil,
+                          StudentRepository studentRepository, RefreshTokenService refreshTokenService,
+                          CookieProvider provider) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
         this.studentRepository = studentRepository;
@@ -91,19 +91,27 @@ public class SecurityConfig {
         http
                 .httpBasic(AbstractHttpConfigurer::disable);
 
-
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/join").permitAll()
-                        .requestMatchers("/reissue").permitAll()
+                        .requestMatchers(
+                                "/**", // 임시로 전체 허용
+                                "/",
+                                "/login",
+                                "/join",
+                                "/api/reissue",
+                                "/health",
+                                "/static/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/temp" // 나중에 ADMIN 생기면 설정
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentRepository, cookieProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
+                                refreshTokenService, studentRepository, cookieProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
-
-
-
 
         //세션 설정
         http
