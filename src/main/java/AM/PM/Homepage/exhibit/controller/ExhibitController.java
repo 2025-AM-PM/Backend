@@ -1,25 +1,23 @@
 package AM.PM.Homepage.exhibit.controller;
 
 import AM.PM.Homepage.exhibit.request.ExhibitCreateRequest;
+import AM.PM.Homepage.exhibit.request.ExhibitUpdateRequest;
 import AM.PM.Homepage.exhibit.response.ExhibitResponse;
 import AM.PM.Homepage.exhibit.response.ExhibitSummaryResponse;
 import AM.PM.Homepage.exhibit.service.ExhibitService;
+import AM.PM.Homepage.security.UserAuth;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -42,13 +40,31 @@ public class ExhibitController {
 
     @PostMapping
     public ResponseEntity<ExhibitSummaryResponse> createExhibit(
-            @Valid @RequestPart(name = "request") ExhibitCreateRequest request,
-            @RequestPart(name = "files", required = false) List<MultipartFile> imageFiles,
-            Authentication authentication
+            @Valid @RequestPart("request") ExhibitCreateRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
+            @AuthenticationPrincipal UserAuth user
     ) throws FileUploadException {
-        Long studentId = 1L; // 임시
-
-        ExhibitSummaryResponse response = exhibitService.createExhibit(request, imageFiles, studentId);
+        ExhibitSummaryResponse response = exhibitService.createExhibit(request, imageFiles, user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{exhibitId}")
+    public ResponseEntity<ExhibitSummaryResponse> updateExhibit(
+            @PathVariable Long exhibitId,
+            @Valid @RequestPart("request") ExhibitUpdateRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
+            @AuthenticationPrincipal UserAuth user
+    ) throws FileUploadException {
+        ExhibitSummaryResponse response = exhibitService.updateExhibit(exhibitId, request, imageFiles, user);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{exhibitId}")
+    public ResponseEntity<Void> deleteExhibit(
+            @PathVariable Long exhibitId,
+            @AuthenticationPrincipal UserAuth user
+    ) {
+        exhibitService.deleteExhibit(exhibitId, user);
+        return ResponseEntity.noContent().build();
     }
 }

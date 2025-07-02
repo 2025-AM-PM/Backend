@@ -4,35 +4,40 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
+@Transactional
 public class FileService {
 
-    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "gif", "webp");
-
-    public String saveImage(MultipartFile file, String uploadPath) throws FileUploadException {
+    public String storeFileToPath(MultipartFile file, String uploadPath) throws FileUploadException {
+        validateUploadPath(uploadPath);
         validateFile(file);
         String originalName = file.getOriginalFilename();
-        validateImageExtension(originalName);
-        return saveFile(file, originalName, uploadPath);
+        return storeFileToPath(file, originalName, uploadPath);
     }
 
-    public String saveFile(MultipartFile file, String uploadPath) throws FileUploadException {
-        validateFile(file);
-        String originalName = file.getOriginalFilename();
-        return saveFile(file, originalName, uploadPath);
+    public void deleteFile(String path) {
+        try {
+            if (Files.deleteIfExists(Path.of(path))) {
+                log.info("파일 삭제 성공: {}", path);
+            } else {
+                log.warn("삭제할 파일이 존재하지 않음: {}", path);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private String saveFile(MultipartFile file, String originalName, String uploadPath) throws FileUploadException {
-        String extension = extractExtension(originalName);
-        String uniqueFileName = UUID.randomUUID() + "." + extension;
+    private String storeFileToPath(MultipartFile file, String originalName, String uploadPath)
+            throws FileUploadException {
+        String uniqueFileName = generateUniqueFilename(originalName);
         Path savePath = Paths.get(uploadPath, uniqueFileName);
 
         try {
@@ -44,8 +49,14 @@ public class FileService {
             log.info("파일 저장 완료: {}", savePath);
             return savePath.toAbsolutePath().normalize().toString().replace("\\", "/");
         } catch (IOException e) {
-            log.error("파일 저장 실패: {}", originalName);
+            log.error("파일 저장 실패: {} - {}", originalName, e.getMessage());
             throw new FileUploadException("파일 저장 중 오류 발생");
+        }
+    }
+
+    private void validateUploadPath(String uploadPath) {
+        if (uploadPath == null || uploadPath.isBlank()) {
+            throw new IllegalArgumentException("업로드 경로가 잘못되었습니다.");
         }
     }
 
@@ -58,19 +69,9 @@ public class FileService {
         }
     }
 
-    private void validateImageExtension(String originalName) {
-        String ext = extractExtension(originalName).toLowerCase();
-        if (!ALLOWED_IMAGE_EXTENSIONS.contains(ext)) {
-            throw new IllegalArgumentException("지원하지 않는 이미지 확장자입니다.");
-        }
-    }
-
-    private String extractExtension(String fileName) {
-        int dotIndex = fileName.lastIndexOf(".");
-        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
-            throw new IllegalArgumentException("파일 확장자가 존재하지 않습니다.");
-        }
-        return fileName.substring(dotIndex + 1);
+    private static String generateUniqueFilename(String originalName) {
+        String sanitized = originalName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+        return UUID.randomUUID() + "_" + sanitized;
     }
 }
 

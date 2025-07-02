@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -43,10 +44,6 @@ public class Exhibit extends BaseEntity {
     private String exhibitUrl;
 
     @Getter
-    @Column(name = "github_url")
-    private String githubUrl;
-
-    @Getter
     @Column(name = "likes", nullable = false)
     @ColumnDefault("0")
     private Integer likes;
@@ -61,13 +58,16 @@ public class Exhibit extends BaseEntity {
     private Student student;
 
     @Builder
-    public Exhibit(String title, String description, String exhibitUrl, String githubUrl, Student student) {
+    public Exhibit(String title, String description, String exhibitUrl, Student student) {
         this.title = title;
         this.description = description;
         this.exhibitUrl = exhibitUrl;
-        this.githubUrl = githubUrl;
         this.student = student;
         this.likes = 0;
+    }
+
+    public Long getStudentId() {
+        return student.getId();
     }
 
     public String getStudentName() {
@@ -85,6 +85,10 @@ public class Exhibit extends BaseEntity {
     }
 
     public String getThumbnailPath() {
+        if(images == null || images.isEmpty()) {
+            return null;
+        }
+
         return images.getFirst().getUploadImagePath();
     }
 
@@ -94,6 +98,19 @@ public class Exhibit extends BaseEntity {
         if (image.getExhibit() != this) {
             image.setExhibit(this);
         }
+    }
+
+    public void clearImages() {
+        this.images.clear();
+    }
+
+    public void update(String title,
+                       String description,
+                       String exhibitUrl
+    ) {
+        this.title = title;
+        this.description = description;
+        this.exhibitUrl = exhibitUrl;
     }
 }
 
