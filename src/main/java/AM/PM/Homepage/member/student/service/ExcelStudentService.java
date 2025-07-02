@@ -31,7 +31,7 @@ public class ExcelStudentService {
 
                 if (sheet == null) System.out.println("sheet is null");
 
-                for (int i = 1; i <= Objects.requireNonNull(sheet).getLastRowNum(); i++) {
+                for (int i = 1; i < Objects.requireNonNull(sheet).getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
                     if (row == null) continue;
 

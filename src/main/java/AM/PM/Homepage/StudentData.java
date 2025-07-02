@@ -1,4 +1,3 @@
-/*
 package AM.PM.Homepage;
 
 import AM.PM.Homepage.member.student.response.StudentResponse;
@@ -28,8 +27,6 @@ public class StudentData implements CommandLineRunner {
         studentService.registerStudent(studentResponses);
 
 
-
     }
 
 }
-*/
