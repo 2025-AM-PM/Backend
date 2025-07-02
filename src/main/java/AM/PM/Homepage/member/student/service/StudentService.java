@@ -7,6 +7,7 @@ import AM.PM.Homepage.member.student.response.SolvedAcResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +17,7 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final AlgorithmProfileService algorithmGradeService;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
-
-
-//    public StudentPageResponse;
+    private final PasswordEncoder bCryptPasswordEncoder;
 
     @Transactional
     public void changeStudentPassword(String studentNumber, String password) {

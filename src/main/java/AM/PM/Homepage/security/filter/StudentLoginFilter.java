@@ -1,12 +1,13 @@
 package AM.PM.Homepage.security.filter;
 
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.AuthenticationRequest;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
-import AM.PM.Homepage.member.student.service.StudentService;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -38,7 +39,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
-    private final StudentService studentService;
+    private final StudentRepository studentRepository;
     private final CookieProvider provider;
 
 
@@ -72,7 +73,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
         String accessToken = jwtUtil.generateAccessToken(studentNumber, role);
         String refreshToken = jwtUtil.generateRefreshToken(studentNumber, role);
 
-        Student byStudentName = studentService.findByStudentNumber(studentNumber);
+        Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
 
         refreshTokenService.registerRefreshToken(refreshToken, byStudentName);
         setResponseStatus(response, accessToken, refreshToken);

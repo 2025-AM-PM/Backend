@@ -12,6 +12,5 @@ public class VerificationToken {
     @Column(name = "verification_code")
     private String verificationCode;
 
-    @OneToOne(mappedBy = "token", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Student student;
+
 }

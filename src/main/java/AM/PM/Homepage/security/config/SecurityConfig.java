@@ -1,11 +1,8 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.student.domain.Student;
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.member.student.service.StudentService;
-import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
@@ -19,17 +16,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.Collection;
 import java.util.Collections;
 
 @EnableWebSecurity
@@ -38,14 +30,14 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
-    private final StudentService studentService;
+    private final StudentRepository studentRepository;
     private final RefreshTokenService refreshTokenService;
     private final CookieProvider provider;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentService studentService, RefreshTokenService refreshTokenService, CookieProvider provider) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, StudentRepository studentRepository, RefreshTokenService refreshTokenService, CookieProvider provider) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
-        this.studentService = studentService;
+        this.studentRepository = studentRepository;
         this.refreshTokenService = refreshTokenService;
         this.provider = provider;
     }
@@ -106,7 +98,7 @@ public class SecurityConfig {
                         .requestMatchers("/reissue").permitAll()
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentService, cookieProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService, studentRepository, cookieProvider), UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
 
