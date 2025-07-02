@@ -29,10 +29,12 @@ public class Student {
     @Column(name = "student_password")
     private String password;
 
-    @OneToOne(mappedBy = "student", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "baekjoon_tier")
     private AlgorithmProfile baekjoonTier;
 
-    @OneToOne(mappedBy = "student", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "token")
     private VerificationToken token;
 
     public void linkAlgorithmProfile(AlgorithmProfile profile) {

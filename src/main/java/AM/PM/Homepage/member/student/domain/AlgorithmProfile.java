@@ -16,13 +16,13 @@ public class AlgorithmProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "backjoon_tier")
+    @Column(name = "baekjoon_tier")
     private Integer tier;
 
-    @Column(name = "backjoon_solved_count")
+    @Column(name = "baekjoon_solved_count")
     private Integer solvedCount;
 
-    @Column(name = "backjoon_rating")
+    @Column(name = "baekjoon_rating")
     private Integer rating;
 
     @MapsId
