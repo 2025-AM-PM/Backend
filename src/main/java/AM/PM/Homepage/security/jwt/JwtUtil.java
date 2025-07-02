@@ -52,17 +52,18 @@ public class JwtUtil {
         return Objects.equals(getCategory(token), "access");
     }
 
-    public String generateRefreshToken(String username, String role) {
-        return generateToken(REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
+    public String generateRefreshToken(Long id, String username, String role) {
+        return generateToken(id, REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
     }
 
-    public String generateAccessToken(String username, String role) {
-        return generateToken(ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
+    public String generateAccessToken(Long id, String username, String role) {
+        return generateToken(id, ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
     }
 
-    private String generateToken(String category, String username, String role, long expirationTime) {
+    private String generateToken(Long id, String category, String username, String role, long expirationTime) {
 
         return Jwts.builder()
+                .subject(id.toString())
                 .claim(JWT_PAYLOAD_CATEGORY, category)
                 .claim(JWT_PAYLOAD_USERNAME, username)
                 .claim(JWT_PAYLOAD_ROLE, role)

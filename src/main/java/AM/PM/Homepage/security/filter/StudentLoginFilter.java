@@ -69,11 +69,11 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         String studentNumber = authResult.getName();
         String role = getAuthority(authResult);
-
-        String accessToken = jwtUtil.generateAccessToken(studentNumber, role);
-        String refreshToken = jwtUtil.generateRefreshToken(studentNumber, role);
-
         Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
+
+        String accessToken = jwtUtil.generateAccessToken(byStudentName.getId(), studentNumber, role);
+        String refreshToken = jwtUtil.generateRefreshToken(byStudentName.getId(),studentNumber, role);
+
 
         refreshTokenService.registerRefreshToken(refreshToken, byStudentName);
         setResponseStatus(response, accessToken, refreshToken);
