@@ -37,7 +37,7 @@ public class ExcelStudentService {
 
                     String studentNumber = getCellValueAsString(row.getCell(2));
                     String studentName = getCellValueAsString(row.getCell(1));
-                    String studentPhoneNumber = getCellValueAsString(row.getCell(4));
+                    String studentPhoneNumber = passwordEncoder.encode(getCellValueAsString(row.getCell(4)));
 
                     studentResponses.add(new StudentResponse(studentNumber, studentPhoneNumber, studentName));
                 }
