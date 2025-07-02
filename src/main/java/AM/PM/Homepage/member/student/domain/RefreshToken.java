@@ -15,8 +15,8 @@ public class RefreshToken {
 
 
     @Id
-    @UuidGenerator
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private Long id;
 
     @MapsId
     @OneToOne
