@@ -4,7 +4,9 @@ import AM.PM.Homepage.exhibit.entity.Exhibit;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
+import lombok.Getter;
 
+@Getter
 @Builder
 public class ExhibitResponse {
 
@@ -14,7 +16,6 @@ public class ExhibitResponse {
     private String title;
     private String description;
     private String exhibitUrl;
-    private String githubUrl;
     private Integer likes;
     private List<String> imageUrls;
     private LocalDateTime createdAt;
@@ -28,7 +29,6 @@ public class ExhibitResponse {
                 .title(exhibit.getTitle())
                 .description(exhibit.getDescription())
                 .exhibitUrl(exhibit.getExhibitUrl())
-                .githubUrl(exhibit.getGithubUrl())
                 .likes(exhibit.getLikes())
                 .imageUrls(exhibit.getAllImagePath())
                 .createdAt(exhibit.getCreatedAt())
