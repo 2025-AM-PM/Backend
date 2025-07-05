@@ -4,7 +4,7 @@ import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import AM.PM.Homepage.member.student.response.SolvedAcResponse;
+import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,7 +26,7 @@ public class StudentService {
 
     @Transactional
     public void changeStudentPassword(String studentNumber, String password) {
-        Student student = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
+        Student student = findByStudentNumber(studentNumber);
         student.setPassword(bCryptPasswordEncoder.encode(password));
     }
 
@@ -43,12 +43,22 @@ public class StudentService {
         return studentRepository.findVerificationCodeById(studentId);
     }
 
+    public StudentInformationResponse showStudentInformation(String solvedAcNickname, String studentNumber) {
+
+        StudentInformationResponse studentInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
+
+        studentInformationResponse.setStudentNumber(studentNumber);
+        studentInformationResponse.setSolvedAcNickname(solvedAcNickname);
+
+        return studentInformationResponse;
+    }
+
     @Transactional
     public void linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
 
         Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
-        SolvedAcResponse solvedAcResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
-        AlgorithmProfile algorithmProfile = AlgorithmProfile.from(solvedAcResponse);
+        StudentInformationResponse studentInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
+        AlgorithmProfile algorithmProfile = AlgorithmProfile.from(studentInformationResponse);
 
         algorithmGradeService.registerAlgorithmGrade(algorithmProfile);
 
@@ -60,6 +70,13 @@ public class StudentService {
         studentRepository.saveAll(students);
     }
 
+    public void deleteStudent(Long id) {
+        studentRepository.delete(findByStudentId(id));
+    }
+
+    private Student findByStudentId(Long id) {
+        return studentRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+    }
 
 
 }

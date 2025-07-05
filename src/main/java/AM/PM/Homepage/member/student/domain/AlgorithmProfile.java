@@ -1,6 +1,6 @@
 package AM.PM.Homepage.member.student.domain;
 
-import AM.PM.Homepage.member.student.response.SolvedAcResponse;
+import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,7 +29,7 @@ public class AlgorithmProfile {
     private Student student;
 
 
-    public static AlgorithmProfile from(SolvedAcResponse solvedAcInformation) {
+    public static AlgorithmProfile from(StudentInformationResponse solvedAcInformation) {
         return AlgorithmProfile.builder()
                 .solvedCount(solvedAcInformation.getSolvedCount())
                 .rating(solvedAcInformation.getRating())

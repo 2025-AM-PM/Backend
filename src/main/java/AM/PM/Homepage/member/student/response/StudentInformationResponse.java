@@ -5,8 +5,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SolvedAcResponse {
+public class StudentInformationResponse {
 
+    private String studentNumber;
+    private String solvedAcNickname;
     private Integer solvedCount;
     private Integer tier;
     private Integer rating;
