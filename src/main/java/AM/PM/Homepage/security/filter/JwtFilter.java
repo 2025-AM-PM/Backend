@@ -46,11 +46,13 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
+        Long id = jwtUtil.getId(token);
         String username = jwtUtil.getUsername(token);
         String role = jwtUtil.getRole(token);
 
         Student student = Student.builder()
-                .studentName(username)
+                .id(id)
+                .studentNumber(username)
                 .studentRole(role)
                 .build();
 

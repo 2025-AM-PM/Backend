@@ -2,7 +2,7 @@ package AM.PM.Homepage.member.student.service;
 
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
-import AM.PM.Homepage.member.student.response.StudentInformationResponse;
+import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
 import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -24,8 +24,8 @@ public class AlgorithmProfileService {
                 .build();
     }
 
-    public StudentInformationResponse fetchSolvedAcInformation(String solvedAcNickname) {
-        return performApiRequest(solvedAcNickname, StudentInformationResponse.class);
+    public SolvedAcInformationResponse fetchSolvedAcInformation(String solvedAcNickname) {
+        return performApiRequest(solvedAcNickname, SolvedAcInformationResponse.class);
     }
 
     public VerificationCodeResponse fetchSolvedBio(String solvedAcNickname) {

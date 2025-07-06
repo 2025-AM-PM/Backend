@@ -23,7 +23,7 @@ public class JwtUtil {
     private final static String JWT_PAYLOAD_CATEGORY = "category";
     private final static String JWT_PAYLOAD_USERNAME = "username";
     private final static String JWT_PAYLOAD_ROLE = "role";
-
+    private final static String JWT_PAYLOAD_ID = "id";
 
     public JwtUtil(@Value("${spring.jwt.secret}") String secretKey) {
         this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
@@ -42,6 +42,10 @@ public class JwtUtil {
     public String getCategory(String token) {
 
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_CATEGORY, String.class);
+    }
+
+    public Long getId(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_ID, Long.class);
     }
 
     public void isExpired(String token) {
@@ -63,6 +67,7 @@ public class JwtUtil {
                 .claim(JWT_PAYLOAD_CATEGORY, category)
                 .claim(JWT_PAYLOAD_USERNAME, username)
                 .claim(JWT_PAYLOAD_ROLE, role)
+                .claim(JWT_PAYLOAD_ID, id)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(secretKey)

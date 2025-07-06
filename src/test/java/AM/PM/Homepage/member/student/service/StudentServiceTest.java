@@ -1,9 +1,7 @@
 package AM.PM.Homepage.member.student.service;
 
-import AM.PM.Homepage.member.student.domain.Student;
-import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import org.assertj.core.api.Assertions;
+import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +20,7 @@ class StudentServiceTest {
     void varification_users_token() {
 
         VerificationCodeRequest verificationCodeRequest = new VerificationCodeRequest();
-        verificationCodeRequest.setStudentName("imnotyourocean");
+        verificationCodeRequest.setSolvedAcNickname("imnotyourocean");
 
         assertTrue(studentService.verificationStudentCode(12L, verificationCodeRequest));
     }
@@ -33,4 +31,13 @@ class StudentServiceTest {
         Student student = studentService.linkAlgorithmProfileToStudent(12L, "imnotyourocean");
         assertNotNull(student.getBaekjoonTier());
     }*/
+
+    @Test
+    @DisplayName("사용자의 정보를 받아온다 ( + SolvedAc Data)")
+    void show_Student_Information() {
+        StudentInformationResponse studentInformationResponse =
+                studentService.showStudentInformationForTest("jeongbright", "202117072");
+
+    }
+
 }

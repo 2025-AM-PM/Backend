@@ -9,6 +9,6 @@ public class StudentPageResponse {
 
 
     private String studentName;
-    private StudentInformationResponse studentInformationResponse;
+    private SolvedAcInformationResponse solvedAcInformationResponse;
 
 }

@@ -11,10 +11,12 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +33,7 @@ import java.util.Iterator;
 
 import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -69,6 +72,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         String studentNumber = authResult.getName();
         String role = getAuthority(authResult);
+
         Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
 
         String accessToken = jwtUtil.generateAccessToken(byStudentName.getId(), studentNumber, role);
@@ -86,7 +90,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     }
 
     private static AuthenticationRequest parseLoginRequest(HttpServletRequest request) throws IOException {
-        AuthenticationRequest login = new AuthenticationRequest();
+        AuthenticationRequest login;
 
         ObjectMapper objectMapper = new ObjectMapper();
         ServletInputStream inputStream = request.getInputStream();
@@ -105,9 +109,20 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
 
     private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
-        response.setHeader(ACCESS_TOKEN.getValue(), accessToken);
-        response.addCookie(provider.createCookie(REFRESH_TOKEN.getValue(), refreshToken));
+        response.setHeader(AUTHORIZATION, accessToken);
+        response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
+    }
+
+    public Cookie createCookie(String key, String value) {
+
+        Cookie cookie = new Cookie(key, value);
+        cookie.setMaxAge(24*60*60);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+
+        return cookie;
     }
 
 }

@@ -3,7 +3,9 @@ package AM.PM.Homepage.member.student.service;
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
+import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
+import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
 import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
@@ -25,9 +27,19 @@ public class StudentService {
     private final PasswordEncoder bCryptPasswordEncoder;
 
     @Transactional
-    public void changeStudentPassword(String studentNumber, String password) {
-        Student student = findByStudentNumber(studentNumber);
-        student.setPassword(bCryptPasswordEncoder.encode(password));
+    public void changeStudentPassword(Long studentId, String password) {
+        findByStudentId(studentId)
+                .setPassword(bCryptPasswordEncoder.encode(password));
+    }
+
+    public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {
+
+        if(encodedPassword.equals(passwordChangeRequest.getRawCurrentPassword())
+            && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm())) {
+            return true;
+        }
+
+        throw new RuntimeException("."); // custom Exception
     }
 
     public Student findByStudentNumber(String studentNumber) {
@@ -35,7 +47,7 @@ public class StudentService {
     }
 
     public boolean verificationStudentCode(Long studentId, VerificationCodeRequest request) {
-        VerificationCodeResponse verificationCodeResponse = algorithmGradeService.fetchSolvedBio(request.getStudentName());
+        VerificationCodeResponse verificationCodeResponse = algorithmGradeService.fetchSolvedBio(request.getSolvedAcNickname());
         return Objects.equals(issueVerificationCode(studentId), verificationCodeResponse.getBio());
     }
 
@@ -43,26 +55,32 @@ public class StudentService {
         return studentRepository.findVerificationCodeById(studentId);
     }
 
-    public StudentInformationResponse showStudentInformation(String solvedAcNickname, String studentNumber) {
+    public StudentInformationResponse showStudentInformationForTest(String solvedAcNickname, String studentNumber) {
 
-        StudentInformationResponse studentInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
+        SolvedAcInformationResponse solvedAcInformationResponse
+                = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
 
-        studentInformationResponse.setStudentNumber(studentNumber);
-        studentInformationResponse.setSolvedAcNickname(solvedAcNickname);
-
-        return studentInformationResponse;
+        return StudentInformationResponse.builder()
+                .studentNumber(studentNumber)
+                .solvedAcInformationResponse(solvedAcInformationResponse)
+                .build();
     }
 
     @Transactional
-    public void linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
+    public StudentInformationResponse linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
 
         Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
-        StudentInformationResponse studentInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
-        AlgorithmProfile algorithmProfile = AlgorithmProfile.from(studentInformationResponse);
+        SolvedAcInformationResponse solvedAcInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
+        AlgorithmProfile algorithmProfile = AlgorithmProfile.from(solvedAcInformationResponse);
 
         algorithmGradeService.registerAlgorithmGrade(algorithmProfile);
 
         student.linkAlgorithmProfile(algorithmProfile);
+
+        return StudentInformationResponse.builder()
+                .studentNumber(student.getStudentNumber())
+                .solvedAcInformationResponse(solvedAcInformationResponse)
+                .build();
     }
 
     public void registerStudent(List<StudentResponse> studentResponses) {

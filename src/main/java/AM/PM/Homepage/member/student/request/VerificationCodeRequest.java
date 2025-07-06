@@ -9,6 +9,6 @@ import lombok.Setter;
 public class VerificationCodeRequest {
 
     @NotNull
-    private String studentName;
+    private String solvedAcNickname;
 
 }
