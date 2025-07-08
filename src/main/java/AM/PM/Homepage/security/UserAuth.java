@@ -30,6 +30,11 @@ public class UserAuth implements UserDetails {
 
     @Override
     public String getUsername() {
-        return student.getStudentName();
+        return student.getStudentNumber();
     }
+
+    public Long getId() {
+        return student.getId();
+    }
+
 }

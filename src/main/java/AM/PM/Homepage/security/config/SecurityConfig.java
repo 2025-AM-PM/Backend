@@ -1,13 +1,13 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.student.domain.Student;
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
-import AM.PM.Homepage.security.UserAuth;
+import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import AM.PM.Homepage.util.CookieProvider;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,18 +16,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-
-import java.util.Collection;
-import java.util.Collections;
 
 @EnableWebSecurity
 @Configuration
@@ -35,16 +28,20 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
-    private final RefreshTokenRepository refreshRepository;
-    private final StudentRepository repository;
+    private final StudentRepository studentRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final CookieProvider provider;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil, RefreshTokenRepository refreshRepository, StudentRepository repository) {
-
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil,
+                          StudentRepository studentRepository, RefreshTokenService refreshTokenService,
+                          CookieProvider provider) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
-        this.refreshRepository = refreshRepository;
-        this.repository = repository;
+        this.studentRepository = studentRepository;
+        this.refreshTokenService = refreshTokenService;
+        this.provider = provider;
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -59,7 +56,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
 
         http
                 .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
@@ -88,26 +85,33 @@ public class SecurityConfig {
 
         //From 로그인 방식 disable
         http
-                .formLogin((auth) -> auth.disable());
+                .formLogin(AbstractHttpConfigurer::disable);
 
         //http basic 인증 방식 disable
         http
-                .httpBasic((auth) -> auth.disable());
-
+                .httpBasic(AbstractHttpConfigurer::disable);
 
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/join").permitAll()
-                        .requestMatchers("/admin").hasRole("ADMIN")
-                        .requestMatchers("/reissue").permitAll()
+                        .requestMatchers(
+                                "/**", // 임시로 전체 허용
+                                "/",
+                                "/login",
+                                "/join",
+                                "/api/reissue",
+                                "/health",
+                                "/static/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/temp" // 나중에 ADMIN 생기면 설정
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshRepository, repository), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
+                                refreshTokenService, studentRepository, cookieProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
-
-
-
 
         //세션 설정
         http

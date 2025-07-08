@@ -1,21 +1,19 @@
 package AM.PM.Homepage.member.student.domain;
 
-import AM.PM.Homepage.util.constant.StudentRole;
+import AM.PM.Homepage.member.student.response.StudentResponse;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Builder
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 public class Student {
 
     @Id
@@ -23,7 +21,7 @@ public class Student {
     private Long id;
 
     @Column(name = "student_number", unique = true)
-    @Pattern(regexp = "^[0-9]{6}$")
+//    @Pattern(regexp = "^[0-9]{8}$")
     private String studentNumber;
 
     @Column(name = "student_role", nullable = false)
@@ -35,8 +33,40 @@ public class Student {
     @Column(name = "student_password")
     private String password;
 
-    @OneToOne
-    @JoinColumn(name = "baekjoon_tier_id")
-    private BaekjoonTier baekjoonTier;
+    @Column(name = "solved_ac_token")
+    private String verificationToken;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "algorithm_profile_id")
+    private AlgorithmProfile baekjoonTier;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refresh_token_id")
+    private RefreshToken refreshToken;
+
+    public Student(StudentResponse response) {
+        this.studentNumber = response.getStudentNumber();
+        this.studentRole = "ROLE_USER";
+        this.studentName = response.getStudentName();
+        this.password = response.getPhoneNumber();
+        this.verificationToken = issuedVerificationToken();
+    }
+
+    public void linkAlgorithmProfile(AlgorithmProfile profile) {
+        this.baekjoonTier = profile;
+        profile.linkStudent(this);
+    }
+
+    public static List<Student> from(List<StudentResponse> response) {
+
+        return response.stream()
+                .map(Student::new)
+                .toList();
+    }
+    public String issuedVerificationToken() {
+        return UUID.randomUUID().toString();
+    }
+
+
 
 }

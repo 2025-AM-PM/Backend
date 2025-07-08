@@ -1,13 +1,13 @@
 package AM.PM.Homepage.security.filter;
 
-import AM.PM.Homepage.member.student.domain.RefreshToken;
 import AM.PM.Homepage.member.student.domain.Student;
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.AuthenticationRequest;
+import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
+import AM.PM.Homepage.util.CookieProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,12 +29,11 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
-import java.util.UUID;
 
 import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -41,10 +41,10 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenService refreshTokenService;
     private final StudentRepository studentRepository;
+    private final CookieProvider provider;
 
-    private final static int COOKIE_MAX_AGE = 24*60*60;
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -62,8 +62,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
 
-//        setDetails(request, authRequest);
-        log.info("로그인 잘 진행중");
+        setDetails(request, authRequest);
         return authenticationManager.authenticate(authRequest);
     }
 
@@ -71,20 +70,18 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
 
-        String name = authResult.getName();
+        String studentNumber = authResult.getName();
         String role = getAuthority(authResult);
-        log.info("어디서 오류지?");
-        String accessToken = jwtUtil.generateAccessToken(name, role);
-        String refreshToken = jwtUtil.generateRefreshToken(name, role);
 
-        Student byStudentName = studentRepository.findByStudentName(name);
+        Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
 
-        storeRefreshToken(refreshToken, byStudentName);
-        log.info("어디서 오류지?>?");
+        String accessToken = jwtUtil.generateAccessToken(byStudentName.getId(), studentNumber, role);
+        String refreshToken = jwtUtil.generateRefreshToken(byStudentName.getId(),studentNumber, role);
+
+
+        refreshTokenService.registerRefreshToken(refreshToken);
         setResponseStatus(response, accessToken, refreshToken);
-        log.info("어디서 오류지?_?!");
     }
-
 
 
     @Override
@@ -93,7 +90,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     }
 
     private static AuthenticationRequest parseLoginRequest(HttpServletRequest request) throws IOException {
-        AuthenticationRequest login = new AuthenticationRequest();
+        AuthenticationRequest login;
 
         ObjectMapper objectMapper = new ObjectMapper();
         ServletInputStream inputStream = request.getInputStream();
@@ -110,28 +107,22 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
         return auth.getAuthority();
     }
 
-    private static Cookie createCookie(String key, String value) {
+
+    private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
+        response.setHeader(AUTHORIZATION, accessToken);
+        response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
+        response.setStatus(HttpStatus.OK.value());
+    }
+
+    public Cookie createCookie(String key, String value) {
 
         Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(COOKIE_MAX_AGE);
+        cookie.setMaxAge(24*60*60);
+        cookie.setSecure(true);
+        cookie.setPath("/");
         cookie.setHttpOnly(true);
 
         return cookie;
     }
 
-    private static void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
-        response.setHeader(ACCESS_TOKEN.getValue(), accessToken);
-        response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
-        response.setStatus(HttpStatus.OK.value());
-    }
-
-
-    private void storeRefreshToken(String refreshToken, Student std) {
-        RefreshToken refreshTokenEntity = RefreshToken.builder()
-                .expiration(new Date(System.currentTimeMillis() + JwtTokenExpirationTime.refreshExpirationHours).toString())
-                .refreshToken(refreshToken)
-                .build();
-        refreshTokenEntity.setStudent(std);
-        refreshTokenRepository.save(refreshTokenEntity);
-    }
 }
