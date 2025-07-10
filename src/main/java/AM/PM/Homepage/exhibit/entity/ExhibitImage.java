@@ -1,6 +1,6 @@
 package AM.PM.Homepage.exhibit.entity;
 
-import AM.PM.Homepage.common.entity.BaseEntity;
+import AM.PM.Homepage.common.entity.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,7 +18,7 @@ import lombok.Setter;
 @Entity
 @NoArgsConstructor
 @Table(name = "exhibit_image")
-public class ExhibitImage extends BaseEntity {
+public class ExhibitImage extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
