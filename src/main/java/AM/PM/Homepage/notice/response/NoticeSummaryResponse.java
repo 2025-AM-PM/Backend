@@ -1,7 +1,7 @@
 package AM.PM.Homepage.notice.response;
 
 import AM.PM.Homepage.notice.entity.Notice;
-import AM.PM.Homepage.util.constant.NoticeType;
+import AM.PM.Homepage.notice.entity.NoticeType;
 import lombok.Builder;
 import lombok.Getter;
 
