@@ -1,6 +1,6 @@
 package AM.PM.Homepage.exhibit.entity;
 
-import AM.PM.Homepage.common.entity.BaseEntity;
+import AM.PM.Homepage.common.entity.BaseTimeEntity;
 import AM.PM.Homepage.member.student.domain.Student;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -12,7 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -24,7 +23,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Entity
 @Table(name = "exhibits")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Exhibit extends BaseEntity {
+public class Exhibit extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

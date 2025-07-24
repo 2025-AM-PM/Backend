@@ -47,6 +47,8 @@ dependencies {
 
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
 
+    implementation 'org.jsoup:jsoup:1.21.1'
+
 }
 
 tasks.named('test') {
