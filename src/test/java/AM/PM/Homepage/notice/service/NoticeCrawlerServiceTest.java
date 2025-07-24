@@ -22,7 +22,7 @@ class NoticeCrawlerServiceTest {
                 .forEach(notice -> {
                     System.out.println("=================================================");
                     System.out.println("제목 = " + notice.getTitle());
-                    System.out.println("내용 = " + notice.getContent().substring(0,20));
+                    System.out.println("내용 = " + notice.getContent().substring(0,10));
                     System.out.println("URL = " + notice.getUrl());
                 });
     }
