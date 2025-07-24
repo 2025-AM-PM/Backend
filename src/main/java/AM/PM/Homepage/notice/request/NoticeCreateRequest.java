@@ -1,6 +1,6 @@
 package AM.PM.Homepage.notice.request;
 
-import AM.PM.Homepage.util.constant.NoticeType;
+import AM.PM.Homepage.notice.entity.NoticeType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -13,9 +13,10 @@ public class NoticeCreateRequest {
     @NotBlank
     private String title;
 
-    @NotBlank
     private String content;
 
     @NotNull
     private NoticeType noticeType;
+
+    private String url;
 }

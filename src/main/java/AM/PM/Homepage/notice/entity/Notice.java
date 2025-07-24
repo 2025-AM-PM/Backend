@@ -1,7 +1,6 @@
 package AM.PM.Homepage.notice.entity;
 
 import AM.PM.Homepage.common.entity.BaseTimeEntity;
-import AM.PM.Homepage.util.constant.NoticeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 @Entity
@@ -31,7 +31,7 @@ public class Notice extends BaseTimeEntity {
     private String title;
 
     @Lob
-    @Column(nullable = false)
+    @Setter
     private String content;
 
     @Enumerated(EnumType.STRING)
@@ -42,20 +42,25 @@ public class Notice extends BaseTimeEntity {
     @Column(name = "views")
     private Integer views;
 
+    @Column(name = "notice_url")
+    private String url;
+
     @Builder
-    protected Notice(String title, String content, NoticeType noticeType) {
+    protected Notice(String title, String content, NoticeType noticeType, String url) {
         this.title = title;
         this.content = content;
         this.noticeType = noticeType;
+        this.url = url;
     }
 
     public void increaseViews() {
         this.views++;
     }
 
-    public void update(String title, String content, NoticeType type) {
+    public void update(String title, String content, NoticeType type, String url) {
         this.title = title;
         this.content = content;
         this.noticeType = type;
+        this.url = url;
     }
 }

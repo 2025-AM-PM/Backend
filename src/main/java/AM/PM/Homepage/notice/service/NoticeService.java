@@ -51,7 +51,7 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("해당 공지를 찾을 수 없습니다."));
 
-        notice.update(request.getTitle(), request.getContent(), request.getNoticeType());
+        notice.update(request.getTitle(), request.getContent(), request.getNoticeType(), request.getUrl());
 
         return NoticeSummaryResponse.from(notice);
     }
