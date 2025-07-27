@@ -38,21 +38,21 @@ class StudyGroupServiceTest {
         student01 = new Student(new StudentResponse("1111", "010-1111-1111", "student01"));
         student02 = new Student(new StudentResponse("2222", "010-2222-2222", "student02"));
 
-        studentRepository.save(student01);
-        studentRepository.save(student02);
+        student01 = studentRepository.save(student01);
+        student02 = studentRepository.save(student02);
     }
 
     @Test
     void 스터디그룹_전체_테스트() {
         // 생성
-        StudyGroupCreateResponse createResponse = studyGroupService.createStudyGroup(
-                new StudyGroupCreateRequest("01", "study01", 10), 1L);
+        StudyGroupCreateResponse group = studyGroupService.createStudyGroup(
+                new StudyGroupCreateRequest("01", "study01", 10), student01.getId());
 
         // 가입 신청
-        StudyGroupApplyResponse applyResponse = studyGroupService.applyStudyGroup(2L, 1L);
+        StudyGroupApplyResponse application = studyGroupService.applyStudyGroup(student02.getId(), group.getId());
 
         // 가입 신청 승인
-        ApplicationApproveResponse approveResponse = studyGroupService.approveApplication(1L, 1L, 1L);
+        ApplicationApproveResponse approveResponse = studyGroupService.approveApplication(group.getId(), application.getId(), student01.getId());
         assertThat(approveResponse.getStatus()).isEqualTo(ApplicationStatus.APPROVED);
 
         // 스터디 조회
