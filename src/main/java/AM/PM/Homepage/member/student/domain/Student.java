@@ -51,10 +51,10 @@ public class Student {
     private List<Exhibit> exhibits;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StudyGroupMember> studyGroupMembers = new ArrayList<>();
+    private List<StudyGroupMember> studyGroupMembers;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StudyGroupApplication> studyGroupApplications = new ArrayList<>();
+    private List<StudyGroupApplication> studyGroupApplications;
 
     public Student(StudentResponse response) {
         this.studentNumber = response.getStudentNumber();
