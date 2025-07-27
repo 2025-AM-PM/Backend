@@ -47,26 +47,28 @@ jobs:
           BRANCH="${GITHUB_REF##*/}"
 
           if [[ "$BRANCH" == "main" ]]; then
-            echo "HOST=${{ secrets.OCI_HOST }}"              >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_USER }}"              >> $GITHUB_ENV
-            echo "APP=spring-main"                           >> $GITHUB_ENV
-            echo "PROFILE=main"                              >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_HOST }}" >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_USER }}" >> $GITHUB_ENV
+            echo "APP=spring-main"             >> $GITHUB_ENV
+            echo "PROFILE=main"                >> $GITHUB_ENV
             echo "DB_USERNAME=${{ secrets.DB_USERNAME_MAIN }}" >> $GITHUB_ENV
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_MAIN }}" >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
-            echo "${{ secrets.OCI_SSH_KEY }}"                >> $GITHUB_ENV
-            echo "EOF"                                       >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                >> $GITHUB_ENV
+            echo "${{ secrets.OCI_SSH_KEY }}"  >> $GITHUB_ENV
+            echo "EOF"                         >> $GITHUB_ENV
           else
-            echo "HOST=${{ secrets.OCI_TEST_HOST }}"         >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_TEST_USER }}"         >> $GITHUB_ENV
-            echo "APP=spring-test"                           >> $GITHUB_ENV
-            echo "PROFILE=test"                              >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
-            echo "${{ secrets.OCI_TEST_SSH_KEY }}"           >> $GITHUB_ENV
-            echo "EOF"                                       >> $GITHUB_ENV
+            echo "HOST=${{ secrets.OCI_TEST_HOST }}" >> $GITHUB_ENV
+            echo "USER=${{ secrets.OCI_TEST_USER }}" >> $GITHUB_ENV
+            echo "APP=spring-test"                  >> $GITHUB_ENV
+            echo "PROFILE=test"                     >> $GITHUB_ENV
+            echo "DB_USERNAME=" >> $GITHUB_ENV      # H2 사용 → 빈값
+            echo "DB_PASSWORD=" >> $GITHUB_ENV
+            echo "SSH_KEY<<EOF"                     >> $GITHUB_ENV
+            echo "${{ secrets.OCI_TEST_SSH_KEY }}"  >> $GITHUB_ENV
+            echo "EOF"                              >> $GITHUB_ENV
           fi
 
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"        >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
 
       - name: Copy artifacts to server
         uses: appleboy/scp-action@v0.1.4
@@ -83,6 +85,7 @@ jobs:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           key: ${{ env.SSH_KEY }}
+          envs: APP,PROFILE,DB_USERNAME,DB_PASSWORD,JWT_SECRET
           script: |
             set -euo pipefail
             cd ~/app
