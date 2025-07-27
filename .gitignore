@@ -41,3 +41,6 @@ application.properties
 
 ### mac ###
 .DS_Store
+
+### Temporary DB ###
+/db/
