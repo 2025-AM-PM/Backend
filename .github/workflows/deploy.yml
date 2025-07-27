@@ -3,22 +3,15 @@ name: CI & CD
 on:
   push:
     branches: [main, test]
-  pull_request:
-    branches: [test]
 
 env:
   JAVA_VERSION: '21'
 
 jobs:
-  # ───────────── 1) TEST ─────────────
   test:
     runs-on: ubuntu-latest
-
-    # ⬇️ Secrets that application-test.properties expects
     env:
-      DB_USERNAME_TEST: ${{ secrets.DB_USERNAME_TEST }}
-      DB_PASSWORD_TEST: ${{ secrets.DB_PASSWORD_TEST }}
-      JWT_SECRET:       ${{ secrets.JWT_SECRET }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     steps:
       - uses: actions/checkout@v3
@@ -27,43 +20,33 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # run tests with the test profile (Azure SQL reachable from runner)
       - run: ./gradlew test -Dspring.profiles.active=test
 
-  # ───────────── 2) BUILD & DEPLOY ─────────────
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: >
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test')) ||
-      (github.event_name == 'pull_request' &&
-       github.base_ref == 'test')
 
     steps:
-      # checkout & Java
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # build JAR
       - name: Build bootJar
         run: ./gradlew bootJar -x test
 
-      # copy JAR → app.jar
       - name: Prepare artifact
-        id: prep
         run: |
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
-          [ -z "$JAR" ] && { echo "❌  jar not found"; exit 1; }
+          [ -z "$JAR" ] && { echo "❌ jar not found"; exit 1; }
           cp "$JAR" app.jar
 
-      # branch-specific deploy vars
       - name: Set deploy env vars
         run: |
-          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+          BRANCH="${GITHUB_REF##*/}"
+
+          if [[ "$BRANCH" == "main" ]]; then
             echo "HOST=${{ secrets.OCI_HOST }}"              >> $GITHUB_ENV
             echo "USER=${{ secrets.OCI_USER }}"              >> $GITHUB_ENV
             echo "APP=spring-main"                           >> $GITHUB_ENV
@@ -78,15 +61,13 @@ jobs:
             echo "USER=${{ secrets.OCI_TEST_USER }}"         >> $GITHUB_ENV
             echo "APP=spring-test"                           >> $GITHUB_ENV
             echo "PROFILE=test"                              >> $GITHUB_ENV
-            echo "DB_USERNAME=${{ secrets.DB_USERNAME_TEST }}" >> $GITHUB_ENV
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_TEST }}" >> $GITHUB_ENV
             echo "SSH_KEY<<EOF"                              >> $GITHUB_ENV
             echo "${{ secrets.OCI_TEST_SSH_KEY }}"           >> $GITHUB_ENV
             echo "EOF"                                       >> $GITHUB_ENV
           fi
+
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"        >> $GITHUB_ENV
 
-      # upload artifacts
       - name: Copy artifacts to server
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -96,7 +77,6 @@ jobs:
           source: "app.jar,Dockerfile"
           target: /home/${{ env.USER }}/app/
 
-      # remote deploy
       - name: Deploy on server
         uses: appleboy/ssh-action@v1
         with:
@@ -107,18 +87,16 @@ jobs:
             set -euo pipefail
             cd ~/app
 
-            docker stop "${{ env.APP }}" || true
-            docker rm   "${{ env.APP }}" || true
+            docker stop "$APP" || true
+            docker rm "$APP" || true
 
-            docker build -t "${{ env.APP }}" .
+            docker build -t "$APP" .
 
             docker run -d \
               -p 8080:8080 \
-              --name "${{ env.APP }}" \
-              -e SPRING_PROFILES_ACTIVE=${{ env.PROFILE }} \
-              -e DB_USERNAME_MAIN=${{ env.DB_USERNAME }} \
-              -e DB_PASSWORD_MAIN=${{ env.DB_PASSWORD }} \
-              -e DB_USERNAME_TEST=${{ env.DB_USERNAME }} \
-              -e DB_PASSWORD_TEST=${{ env.DB_PASSWORD }} \
-              -e JWT_SECRET=${{ env.JWT_SECRET }} \
-              "${{ env.APP }}"
+              --name "$APP" \
+              -e SPRING_PROFILES_ACTIVE=$PROFILE \
+              -e DB_USERNAME_MAIN=$DB_USERNAME \
+              -e DB_PASSWORD_MAIN=$DB_PASSWORD \
+              -e JWT_SECRET=$JWT_SECRET \
+              "$APP"
