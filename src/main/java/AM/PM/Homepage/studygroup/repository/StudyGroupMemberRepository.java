@@ -6,6 +6,7 @@ import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMember, Long> {
 
@@ -14,4 +15,6 @@ public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMemb
     boolean existsByStudentAndStudyGroup(Student student, StudyGroup studyGroup);
 
     List<StudyGroupMember> findAllByStudyGroup(StudyGroup studyGroup);
+
+    Optional<StudyGroupMember> findByStudyGroupIdAndStudentId(Long groupId, Long userId);
 }

@@ -1,6 +1,7 @@
 package AM.PM.Homepage.studygroup.response;
 
 import AM.PM.Homepage.studygroup.entity.StudyGroup;
+import AM.PM.Homepage.studygroup.entity.StudyGroupStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -11,12 +12,14 @@ public class StudyGroupUpdateResponse {
     private Long id;
     private String title;
     private String description;
+    private StudyGroupStatus status;
 
     public static StudyGroupUpdateResponse from(StudyGroup studyGroup) {
         return new StudyGroupUpdateResponse(
                 studyGroup.getId(),
                 studyGroup.getTitle(),
-                studyGroup.getDescription()
+                studyGroup.getDescription(),
+                studyGroup.getStatus()
         );
     }
 }

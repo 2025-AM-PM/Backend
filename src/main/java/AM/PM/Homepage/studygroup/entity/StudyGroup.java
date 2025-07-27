@@ -1,6 +1,7 @@
 package AM.PM.Homepage.studygroup.entity;
 
 import AM.PM.Homepage.common.entity.BaseEntity;
+import AM.PM.Homepage.member.student.domain.Student;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -26,6 +27,7 @@ public class StudyGroup extends BaseEntity {
     @Column(nullable = false)
     private int maxMember;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     private StudyGroupStatus status;
 
@@ -54,10 +56,6 @@ public class StudyGroup extends BaseEntity {
         this.leader = leader;
     }
 
-    public boolean isNotLeader(Long userId) {
-        return !this.leader.getStudent().getId().equals(userId);
-    }
-
     public void update(
             String title,
             String description,
@@ -72,5 +70,9 @@ public class StudyGroup extends BaseEntity {
 
     public String getLeaderName() {
         return this.leader.getStudent().getStudentName();
+    }
+
+    public boolean isNotLeader(Student student) {
+        return !this.leader.getStudent().equals(student);
     }
 }

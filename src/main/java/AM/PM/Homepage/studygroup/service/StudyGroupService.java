@@ -34,14 +34,19 @@ public class StudyGroupService {
     public Page<StudyGroupSearchResponse> getStudyGroups(String title, StudyGroupStatus status, Pageable pageable) {
         if (title == null || title.isBlank()) {
             Page<StudyGroup> studyGroups = studyGroupRepository.findAllByStatus(status, pageable);
-            return studyGroups.map(studyGroup ->
-                    StudyGroupSearchResponse.from(studyGroup, studyGroup.getLeaderName())
-            );
+            return studyGroups.map(StudyGroupSearchResponse::from);
         }
         Page<StudyGroup> studyGroups = studyGroupRepository.findAllByTitleContainsIgnoreCaseAndStatus(title, status, pageable);
-        return studyGroups.map(studyGroup ->
-                StudyGroupSearchResponse.from(studyGroup, studyGroup.getLeaderName())
-        );
+        return studyGroups.map(StudyGroupSearchResponse::from);
+    }
+
+    // 내 스터디 목록 조회
+    @Transactional(readOnly = true)
+    public List<MyStudyGroupResponse> getMyStudyGroups(Long userId) {
+        List<StudyGroup> studyGroups = studyGroupRepository.findAllByUserId(userId);
+        return studyGroups.stream()
+                .map(MyStudyGroupResponse::from)
+                .toList();
     }
 
     // 스터디 그룹 상세 조회
@@ -61,7 +66,7 @@ public class StudyGroupService {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
 
-        if (studyGroup.isNotLeader(userId)) {
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
             log.warn("[조회 실패] 리더 아님: {}", userId);
             throw new IllegalArgumentException("StudyGroup 리더만 조회 가능");
         }
@@ -164,7 +169,7 @@ public class StudyGroupService {
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("신청 정보가 그룹에 속하지 않거나 존재하지 않음"));
 
-        if (studyGroup.isNotLeader(userId)) {
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
             log.warn("[승인 실패] 리더 아님: {}", userId);
             throw new IllegalArgumentException("StudyGroup 리더만 승인 가능");
         }
@@ -198,7 +203,7 @@ public class StudyGroupService {
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
                 .orElseThrow(() -> new IllegalArgumentException("신청 정보가 그룹에 속하지 않거나 존재하지 않음"));
 
-        if (studyGroup.isNotLeader(userId)) {
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
             log.warn("[거절 실패] 리더 아님: {}", userId);
             throw new IllegalArgumentException("StudyGroup 리더만 거절 가능");
         }
@@ -217,7 +222,7 @@ public class StudyGroupService {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
 
-        if (studyGroup.isNotLeader(userId)) {
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
             log.warn("[수정 실패] 리더 아님: {}", userId);
             throw new IllegalArgumentException("StudyGroup 리더만 수정 가능");
         }
@@ -232,12 +237,30 @@ public class StudyGroupService {
         return StudyGroupUpdateResponse.from(studyGroup);
     }
 
+    public StudyGroupUpdateResponse updateStudyGroupStatus(StudyGroupStatusUpdateRequest request, Long groupId, Long userId) {
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
+
+        Student user = studentRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 User Id"));
+
+        if (studyGroup.isNotLeader(user)) {
+            log.warn("[상태 수정 실패] 리더 아님: {}", userId);
+            throw new IllegalArgumentException("StudyGroup 리더만 상태 수정 가능");
+        }
+
+        studyGroup.setStatus(request.getStatus());
+        log.info("[모집 상태 변경] groupId={}, userId={}, 상태={}", groupId, userId, request.getStatus());
+
+        return StudyGroupUpdateResponse.from(studyGroup);
+    }
+
     // 스터디 그룹 삭제
     public void deleteStudyGroup(Long groupId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
 
-        if (studyGroup.isNotLeader(userId)) {
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
             log.warn("[삭제 실패] 리더 아님: {}", userId);
             throw new IllegalArgumentException("StudyGroup 리더만 삭제 가능");
         }
@@ -258,5 +281,42 @@ public class StudyGroupService {
 
         applicationRepository.delete(application);
         log.info("[스터디 신청 취소] applicationId={}, groupId={}, userId={}", applicationId, groupId, userId);
+    }
+
+    // 스터디 탈퇴
+    public void leaveStudyGroup(Long groupId, Long userId) {
+        StudyGroupMember member = studyGroupMemberRepository.findByStudyGroupIdAndStudentId(groupId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버"));
+
+        if (member.getRole() == StudyGroupRole.LEADER) {
+            log.warn("[스터디 탈퇴 실패] 리더는 탈퇴 불가: groupId={}, userId={}", groupId, userId);
+            throw new IllegalArgumentException("스터디 리더는 탈퇴할 수 없습니다. 삭제를 사용하세요.");
+        }
+
+        studyGroupMemberRepository.delete(member);
+        log.info("[스터디 탈퇴] groupId={}, userId={}", groupId, userId);
+    }
+
+    // 스터디 멤버 강제 탈퇴
+    public void removeMember(Long groupId, Long groupMemberId, Long userId) {
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+
+        if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
+            throw new IllegalArgumentException("스터디 리더만 멤버를 삭제할 수 있습니다.");
+        }
+
+        StudyGroupMember member = studyGroupMemberRepository.findById(groupMemberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버"));
+
+        if (!member.getStudyGroup().getId().equals(groupId)) {
+            throw new IllegalArgumentException("소속되지 않은 멤버입니다.");
+        }
+
+        if (member.getId().equals(studyGroup.getLeader().getId())) {
+            throw new IllegalArgumentException("리더는 삭제할 수 없습니다.");
+        }
+
+        studyGroupMemberRepository.delete(member);
     }
 }

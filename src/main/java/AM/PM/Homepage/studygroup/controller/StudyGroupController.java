@@ -39,6 +39,15 @@ public class StudyGroupController {
         return ResponseEntity.ok(response);
     }
 
+    // 내 스터디 목록 조회
+    @GetMapping("/me")
+    public ResponseEntity<List<MyStudyGroupResponse>> getMyStudyGroups(
+            @AuthenticationPrincipal UserAuth user
+    ) {
+        List<MyStudyGroupResponse> response = studyGroupService.getMyStudyGroups(user.getId());
+        return ResponseEntity.ok(response);
+    }
+
     // 스터디 상세 조회
     @GetMapping("/{groupId}")
     public ResponseEntity<StudyGroupDetailResponse> getStudyGroupDetail(@PathVariable Long groupId) {
@@ -119,6 +128,17 @@ public class StudyGroupController {
         return ResponseEntity.ok(response);
     }
 
+    // 모집 상태 변경 (리더만)
+    @PatchMapping("/{groupId}/status")
+    public ResponseEntity<StudyGroupUpdateResponse> updateStudyGroupStatus(
+            @RequestBody StudyGroupStatusUpdateRequest request,
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal UserAuth user
+    ) {
+        StudyGroupUpdateResponse response = studyGroupService.updateStudyGroupStatus(request, groupId, user.getId());
+        return ResponseEntity.ok(response);
+    }
+
     // 스터디 그룹 삭제 (리더만)
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteStudyGroup(
@@ -137,6 +157,27 @@ public class StudyGroupController {
             @AuthenticationPrincipal UserAuth user
     ) {
         studyGroupService.deleteStudyGroupApplication(groupId, applicationId, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    // 스터디 탈퇴 (본인만)
+    @DeleteMapping("/{groupId}/leave")
+    public ResponseEntity<Void> leaveStudyGroup(
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal UserAuth user
+    ) {
+        studyGroupService.leaveStudyGroup(groupId, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    // 스터디 멤버 강제 탈퇴 (리더만)
+    @DeleteMapping("/{groupId}/members/{groupMemberId}")
+    public ResponseEntity<Void> removeMember(
+            @PathVariable Long groupId,
+            @PathVariable Long groupMemberId,
+            @AuthenticationPrincipal UserAuth user
+    ) {
+        studyGroupService.removeMember(groupId, groupMemberId, user.getId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -18,7 +18,7 @@ public class StudyGroupDetailResponse {
     private int maxMember;
     private StudyGroupStatus status;
     private String leader;
-    private List<String> members;
+    private List<StudyGroupMemberResponse> members;
 
     public static StudyGroupDetailResponse from(StudyGroup studyGroup, List<StudyGroupMember> members) {
         return new StudyGroupDetailResponse(
@@ -29,7 +29,7 @@ public class StudyGroupDetailResponse {
                 studyGroup.getStatus(),
                 studyGroup.getLeader().getStudent().getStudentName(),
                 members.stream()
-                        .map(m -> m.getStudent().getStudentName())
+                        .map(StudyGroupMemberResponse::from)
                         .toList()
         );
     }
