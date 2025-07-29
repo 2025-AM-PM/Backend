@@ -20,7 +20,14 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - run: ./gradlew test -Dspring.profiles.active=test
+      - name: Run tests with profile
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          if [[ "$BRANCH" == "main" ]]; then
+            ./gradlew test -Dspring.profiles.active=main
+          else
+            ./gradlew test -Dspring.profiles.active=test
+          fi
 
   deploy:
     needs: test
@@ -61,7 +68,7 @@ jobs:
             echo "USER=${{ secrets.OCI_TEST_USER }}" >> $GITHUB_ENV
             echo "APP=spring-test"                  >> $GITHUB_ENV
             echo "PROFILE=test"                     >> $GITHUB_ENV
-            echo "DB_USERNAME=" >> $GITHUB_ENV      # H2 사용 → 빈값
+            echo "DB_USERNAME=" >> $GITHUB_ENV
             echo "DB_PASSWORD=" >> $GITHUB_ENV
             echo "SSH_KEY<<EOF"                     >> $GITHUB_ENV
             echo "${{ secrets.OCI_TEST_SSH_KEY }}"  >> $GITHUB_ENV
