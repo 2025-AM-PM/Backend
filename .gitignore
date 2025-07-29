@@ -40,7 +40,7 @@ application.properties
 .vscode/
 
 ### mac ###
-.DS_Store
+**.DS_Store
 
 ### Temporary DB ###
 /db/
