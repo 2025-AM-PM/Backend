@@ -15,4 +15,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     String findVerificationCodeById(Long id);
 
     List<Student> findByVerificationToken(String verificationToken);
+
+    boolean existsByStudentNumber(String studentNumber);
 }
