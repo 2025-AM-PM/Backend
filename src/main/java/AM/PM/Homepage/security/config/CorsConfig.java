@@ -10,7 +10,13 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry corsRegistry) {
         corsRegistry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "http://localhost:7000", "http://localhost:8080", " https://frontend-phi-ten-65.vercel.app/")
+                .allowedOrigins(
+                        "http://localhost:3000",
+                        "http://localhost:7000",
+                        "http://localhost:8080",
+                        "https://frontend-phi-ten-65.vercel.app/",
+                        "https://ampm-test.duckdns.org"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
