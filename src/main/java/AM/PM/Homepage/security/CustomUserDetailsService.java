@@ -20,7 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String studentNumber) throws UsernameNotFoundException {
-        Student userData = userRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
+        Student userData = userRepository.findByStudentNumber(studentNumber).orElseThrow(() -> new UsernameNotFoundException("학생을 찾을 수 없음: " + studentNumber));
         return new UserAuth(userData);
     }
 }

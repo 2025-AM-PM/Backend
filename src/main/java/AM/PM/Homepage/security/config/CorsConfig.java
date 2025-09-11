@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -16,8 +17,8 @@ public class CorsConfig {
                     "http://localhost:3000",
                     "http://localhost:7000",
                     "http://localhost:8080",
-                    "https://frontend-phi-ten-65.vercel.app/", // 테스트
-                    "https://frontend-phi-ten-65.vercel.app/", // 메인
+                    "https://frontend-phi-ten-65.vercel.app", // 테스트
+                    "https://frontend-phi-ten-65.vercel.app", // 메인
                     "https://ampm-test.duckdns.org",
                     "https://ampm-main.duckdns.org"
             );
@@ -32,9 +33,11 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration conf = new CorsConfiguration();
         conf.setAllowCredentials(true);
-        conf.setAllowedOrigins(CORS_ALLOW_ORIGINS);
+        conf.setAllowedOriginPatterns(CORS_ALLOW_ORIGINS);
         conf.setAllowedMethods(CORS_ALLOW_METHODS);
         conf.setAllowedHeaders(CORS_ALLOW_HEADERS);
+        conf.addExposedHeader(HttpHeaders.AUTHORIZATION);
+        conf.addExposedHeader(HttpHeaders.SET_COOKIE);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", conf);
         return source;

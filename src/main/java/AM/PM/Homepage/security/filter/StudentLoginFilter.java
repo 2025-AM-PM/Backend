@@ -109,7 +109,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
 
     private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
-        response.setHeader(AUTHORIZATION, accessToken);
+        response.setHeader(AUTHORIZATION, "Bearer" + accessToken);
         response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
     }
