@@ -4,6 +4,7 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
+import AM.PM.Homepage.security.handler.LoginSuccessHandler;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +29,7 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
-    private final StudentRepository studentRepository;
     private final RefreshTokenService refreshTokenService;
-    private final CookieProvider provider;
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
@@ -46,7 +45,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
+    public LoginSuccessHandler loginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
+        return new LoginSuccessHandler(jwtUtil, refreshTokenService);
+    }
+
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .cors(conf -> conf.configurationSource(corsConfigurationSource));
@@ -79,8 +84,7 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated());
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
-                                refreshTokenService, studentRepository, cookieProvider),
+                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(jwtUtil, refreshTokenService)),
                         UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
