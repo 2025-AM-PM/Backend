@@ -48,6 +48,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
 
+        http
+                .cors(conf -> conf.configurationSource(corsConfigurationSource));
+
         //csrf disable
         http
                 .csrf(AbstractHttpConfigurer::disable);
@@ -73,7 +76,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 "/temp" // 나중에 ADMIN 생기면 설정
-                        ).hasRole("ADMIN")
+                        ).hasRole("ROLE_ADMIN")
                         .anyRequest().authenticated());
         http
                 .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
