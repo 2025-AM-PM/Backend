@@ -23,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StreamUtils;
 
@@ -40,11 +41,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
-    private final RefreshTokenService refreshTokenService;
-    private final StudentRepository studentRepository;
-    private final CookieProvider provider;
-
+    private final AuthenticationSuccessHandler successHandler;
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -68,23 +65,6 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-
-        String studentNumber = authResult.getName();
-        String role = getAuthority(authResult);
-
-        Student byStudentName = studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
-
-        String accessToken = jwtUtil.generateAccessToken(byStudentName.getId(), studentNumber, role);
-        String refreshToken = jwtUtil.generateRefreshToken(byStudentName.getId(),studentNumber, role);
-
-
-        refreshTokenService.registerRefreshToken(refreshToken);
-        setResponseStatus(response, accessToken, refreshToken);
-    }
-
-
-    @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         response.setStatus(401);
     }
@@ -98,31 +78,6 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         login = objectMapper.readValue(messageBody, AuthenticationRequest.class);
         return login;
-    }
-
-    private static String getAuthority(Authentication authResult) {
-        Collection<? extends GrantedAuthority> authorities = authResult.getAuthorities();
-        Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
-        GrantedAuthority auth = iterator.next();
-        return auth.getAuthority();
-    }
-
-
-    private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken) {
-        response.setHeader(AUTHORIZATION, "Bearer" + accessToken);
-        response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
-        response.setStatus(HttpStatus.OK.value());
-    }
-
-    public Cookie createCookie(String key, String value) {
-
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(24*60*60);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-
-        return cookie;
     }
 
 }
