@@ -6,8 +6,7 @@ import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Collections;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,11 +19,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-@EnableWebSecurity
 @Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
@@ -32,17 +31,7 @@ public class SecurityConfig {
     private final StudentRepository studentRepository;
     private final RefreshTokenService refreshTokenService;
     private final CookieProvider provider;
-
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil,
-                          StudentRepository studentRepository, RefreshTokenService refreshTokenService,
-                          CookieProvider provider) {
-        this.authenticationConfiguration = authenticationConfiguration;
-        this.jwtUtil = jwtUtil;
-        this.studentRepository = studentRepository;
-        this.refreshTokenService = refreshTokenService;
-        this.provider = provider;
-    }
-
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -58,27 +47,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
-
-//        http
-//                .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
-//
-//                    @Override
-//                    public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-//
-//                        CorsConfiguration configuration = new CorsConfiguration();
-//
-//                        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-//                        configuration.setAllowedMethods(Collections.singletonList("*"));
-//                        configuration.setAllowCredentials(true);
-//                        configuration.setAllowedHeaders(Collections.singletonList("*"));
-//                        configuration.setMaxAge(3600L);
-//
-//                        configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-//                        configuration.setExposedHeaders(Collections.singletonList("access"));
-//
-//                        return configuration;
-//                    }
-//                }));
 
         //csrf disable
         http
@@ -124,19 +92,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-/*
-    @Bean
-    public UserDetailsService users(BCryptPasswordEncoder encoder) {
-        Student student =  Student.builder()
-                .studentName("김덕수")
-                .studentNumber("202117072")
-                .password(encoder.encode("990713"))
-                .studentRole("ROLE_USER")
-                .build();
-
-        UserAuth userAuth = new UserAuth(student);
-
-        return new InMemoryUserDetailsManager(userAuth);
-    }*/
-
 }
