@@ -31,7 +31,7 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
 
-    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11'
+    implementation 'org.postgresql:postgresql:42.7.7'
     runtimeOnly 'com.h2database:h2'
     implementation 'com.mysql:mysql-connector-j:9.2.0'
 
@@ -46,6 +46,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
+
+    implementation 'org.jsoup:jsoup:1.21.1'
 
 }
 
