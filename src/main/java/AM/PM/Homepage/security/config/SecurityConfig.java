@@ -81,7 +81,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 "/temp" // 나중에 ADMIN 생기면 설정
-                        ).hasRole("ROLE_ADMIN")
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated());
         http
                 .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(jwtUtil, refreshTokenService)),
