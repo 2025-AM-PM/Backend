@@ -67,7 +67,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        this.successHandler.onAuthenticationSuccess(request, response, chain, authResult);
+        this.successHandler.onAuthenticationSuccess(request, response, authResult);
     }
 
     @Override
