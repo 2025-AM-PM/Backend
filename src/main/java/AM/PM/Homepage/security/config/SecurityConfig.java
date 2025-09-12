@@ -4,6 +4,7 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
+import AM.PM.Homepage.security.handler.LoginFailureHandler;
 import AM.PM.Homepage.security.handler.LoginSuccessHandler;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
@@ -49,6 +50,11 @@ public class SecurityConfig {
         return new LoginSuccessHandler(jwtUtil, refreshTokenService);
     }
 
+    @Bean
+    public LoginFailureHandler loginFailureHandler() {
+        return new LoginFailureHandler();
+    }
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -83,8 +89,13 @@ public class SecurityConfig {
                                 "/temp" // 나중에 ADMIN 생기면 설정
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated());
+
+        StudentLoginFilter studentLoginFilter = new StudentLoginFilter(authenticationManager(authenticationConfiguration));
+        studentLoginFilter.setSuccessHandler(loginSuccessHandler(jwtUtil, refreshTokenService));
+        studentLoginFilter.setFailureHandler(loginFailureHandler());
+
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(jwtUtil, refreshTokenService)),
+                .addFilterAt(studentLoginFilter,
                         UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
