@@ -72,7 +72,6 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
         response.getWriter().write(successResponse);
-        response.sendRedirect("/api/student/intro");
     }
 
     public Cookie createCookie(String key, String value) {
