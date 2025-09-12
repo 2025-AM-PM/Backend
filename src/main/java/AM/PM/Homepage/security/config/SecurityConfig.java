@@ -1,13 +1,11 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;
 import AM.PM.Homepage.security.handler.LoginSuccessHandler;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import AM.PM.Homepage.util.CookieProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -90,7 +88,9 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated());
 
-        StudentLoginFilter studentLoginFilter = new StudentLoginFilter(authenticationManager(authenticationConfiguration));
+        StudentLoginFilter studentLoginFilter = new StudentLoginFilter(
+                authenticationManager(authenticationConfiguration));
+        studentLoginFilter.setFilterProcessesUrl("/api/student/login");
         studentLoginFilter.setSuccessHandler(loginSuccessHandler(jwtUtil, refreshTokenService));
         studentLoginFilter.setFailureHandler(loginFailureHandler());
 
