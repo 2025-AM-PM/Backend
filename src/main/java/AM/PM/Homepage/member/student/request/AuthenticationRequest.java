@@ -11,7 +11,7 @@ import lombok.*;
 public class AuthenticationRequest {
 
     @NotNull
-    @Pattern(regexp = "^[0-9]{6}$")
+    @Pattern(regexp = "^[0-9]{9}$")
     private String studentNumber;
 
     @Min(6) @Max(25)
