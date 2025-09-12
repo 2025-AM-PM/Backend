@@ -70,6 +70,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken, String successResponse) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         response.setHeader(AUTHORIZATION, "Bearer " + accessToken);
         response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
