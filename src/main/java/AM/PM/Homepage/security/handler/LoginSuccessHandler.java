@@ -40,7 +40,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         Long studentId = principal.getId();
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
-        String studentName = authentication.getName();
+        String studentName = principal.getName();
 
         LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName);
 
