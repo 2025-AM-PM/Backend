@@ -37,4 +37,6 @@ public class UserAuth implements UserDetails {
         return student.getId();
     }
 
+    public String getName() { return student.getStudentName();}
+
 }

@@ -40,8 +40,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         Long studentId = principal.getId();
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
+        String studentName = authentication.getName();
 
-        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId);
+        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName);
 
         String accessToken = jwtUtil.generateAccessToken(studentId, studentNumber, role);
         String refreshToken = jwtUtil.generateRefreshToken(studentId,studentNumber, role);
@@ -52,11 +53,12 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         setResponseStatus(response, accessToken, refreshToken, loginSuccessResponse);
     }
 
-    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId) {
+    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName) {
         return LoginSuccessResponse.builder()
                 .studentNumber(studentNumber)
                 .studentId(studentId)
                 .studentTier(null)
+                .studentName(studentName)
                 .build();
     }
 

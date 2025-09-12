@@ -14,5 +14,6 @@ public class LoginSuccessResponse {
     private String studentNumber;
     private Long studentId;
     private String studentTier;
+    private String studentName;
 
 }
