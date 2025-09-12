@@ -16,7 +16,6 @@ import java.time.LocalDate;
 @Entity
 public class CafeteriaMenu extends BaseEntity {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cafeteria_id")

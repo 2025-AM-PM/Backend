@@ -4,6 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.DayOfWeek;
@@ -19,14 +20,11 @@ import java.util.stream.Collectors;
  * 전북대학교 생협 주간 식단표 웹 페이지를 크롤링하여 정제된 메뉴 데이터 리스트를 생성하는 클래스.
  * Spring Service 등에서 재사용 가능하도록 설계됨.
  */
-public class JBNUMenuScraper {
+@Service
+public class CrawlingService {
 
     private static final String JBNU_COOP_URL = "https://coopjbnu.kr/menu/week_menu.php";
 
-    /**
-     * 크롤링된 메뉴 정보를 담는 불변 데이터 객체(DTO).
-     * 이 객체는 JPA Entity로 변환되어 데이터베이스에 저장될 수 있다.
-     */
     public record MenuData(
             String cafeteria,
             String mealType,
@@ -62,7 +60,7 @@ public class JBNUMenuScraper {
             if (cafeteria.equals("진수원")) {
                 allMenus.addAll(parseJinsu(section, weekDates));
             } else if (cafeteria.equals("후생관")) {
-                allMenus.addAll(parseHooseng(section, weekDates));
+                allMenus.addAll(parseHoosaeng(section, weekDates));
             }
         }
         return allMenus;
@@ -92,7 +90,7 @@ public class JBNUMenuScraper {
         return menus;
     }
 
-    private List<MenuData> parseHooseng(Element section, List<LocalDate> weekDates) {
+    private List<MenuData> parseHoosaeng(Element section, List<LocalDate> weekDates) {
         List<MenuData> menus = new ArrayList<>();
         String cafeteria = "후생관";
         Elements rows = section.select("table.tblType03 tbody tr");
@@ -124,7 +122,7 @@ public class JBNUMenuScraper {
                     }
                 }
                 
-                i++; // 다음 행으로 이동
+                i++;
                 if (i < rows.size()) {
                     Elements specialCells = rows.get(i).select("td");
                     for (int j = 0; j < specialCells.size() && j < weekDates.size(); j++) {
