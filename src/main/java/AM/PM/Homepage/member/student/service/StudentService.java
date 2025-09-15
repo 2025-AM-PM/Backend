@@ -102,6 +102,15 @@ public class StudentService {
                 .build();
     }
 
+    public StudentResponse showStudentInformation(Long id) {
+        Student byStudentId = findByStudentId(id);
+
+        return StudentResponse.builder()
+                .studentName(byStudentId.getStudentName())
+                .studentNumber(byStudentId.getStudentNumber())
+                .build();
+    }
+
     public void registerStudent(List<StudentResponse> studentResponses) {
         List<Student> students = Student.from(studentResponses);
         studentRepository.saveAll(students);
