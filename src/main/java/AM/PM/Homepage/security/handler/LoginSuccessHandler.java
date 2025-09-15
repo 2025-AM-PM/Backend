@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.Iterator;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
+@Slf4j
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -41,6 +43,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
         String studentName = principal.getName();
+        log.info(studentName);
 
         LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName);
 

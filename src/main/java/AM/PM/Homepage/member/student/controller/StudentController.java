@@ -4,6 +4,7 @@ import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
 import AM.PM.Homepage.member.student.response.StudentInformationResponse;
+import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.service.StudentService;
 import AM.PM.Homepage.security.UserAuth;
 import java.net.URI;
@@ -29,6 +30,11 @@ public class StudentController {
     @GetMapping("intro")
     public ResponseEntity<?> showMainPage() {
         return null;
+    }
+
+    @GetMapping("mypage")
+    public ResponseEntity<StudentResponse> showMyPage(@AuthenticationPrincipal UserAuth userAuth) {
+        return ResponseEntity.ok(studentService.showStudentInformation(userAuth.getId()));
     }
 
     @PostMapping("signup")
