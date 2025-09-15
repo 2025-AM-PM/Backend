@@ -3,6 +3,7 @@ package AM.PM.Homepage.member.student.controller;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
+import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
 import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.service.StudentService;
@@ -57,6 +58,11 @@ public class StudentController {
         studentService.changeStudentPassword(userAuth.getId(), passwordChangeRequest.getNewPassword());
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("me")
+    public ResponseEntity<LoginSuccessResponse> loadStudentInfo(@AuthenticationPrincipal UserAuth auth) {
+        return ResponseEntity.ok(studentService.loadStudentInfo(auth.getId()));
     }
 
 
