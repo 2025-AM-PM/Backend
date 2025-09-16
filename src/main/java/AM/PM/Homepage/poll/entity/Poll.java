@@ -41,7 +41,6 @@ public class Poll extends BaseTimeEntity {
     @Column(name = "status", nullable = false)
     private PollStatus status = PollStatus.OPEN;
 
-    // 옵션
     // 최대 선택 개수 (기본 1개)
     @PositiveOrZero
     @Column(name = "max_select_opt", nullable = false)
@@ -63,6 +62,11 @@ public class Poll extends BaseTimeEntity {
     @Column(name = "allow_revote", nullable = false)
     private boolean allowRevote;
 
+    // 결과 노출
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result_visibility", nullable = false)
+    private PollResultVisibility resultVisibility;
+
     @Column(name = "deadline_at", nullable = false)
     private LocalDateTime deadlineAt;
 
@@ -70,11 +74,15 @@ public class Poll extends BaseTimeEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<PollOption> options = new ArrayList<>();
 
-    private Poll(String title, String description, PollStatus status, int maxSelect, boolean multiple, boolean anonymous,
-                boolean allowAddOption, boolean allowRevote, LocalDateTime deadlineAt, Long createdBy) {
+    private Poll(String title, String description, PollStatus status, int maxSelect,
+                 boolean multiple, boolean anonymous, boolean allowAddOption, boolean allowRevote,
+                 PollResultVisibility resultVisibility, LocalDateTime deadlineAt, Long createdBy) {
         this.title = title;
         this.description = description;
         this.status = status;
@@ -83,6 +91,7 @@ public class Poll extends BaseTimeEntity {
         this.anonymous = anonymous;
         this.allowAddOption = allowAddOption;
         this.allowRevote = allowRevote;
+        this.resultVisibility = resultVisibility;
         this.deadlineAt = deadlineAt;
         this.createdBy = createdBy;
     }
@@ -97,6 +106,7 @@ public class Poll extends BaseTimeEntity {
                 request.isAnonymous(),
                 request.isAllowAddOption(),
                 request.isAllowRevote(),
+                request.getResultVisibility(),
                 request.getDeadlineAt(),
                 userId
         );
@@ -114,5 +124,6 @@ public class Poll extends BaseTimeEntity {
 
     public void close() {
         this.status = PollStatus.CLOSED;
+        this.closedAt = LocalDateTime.now();
     }
 }

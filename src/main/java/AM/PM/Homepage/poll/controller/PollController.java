@@ -3,6 +3,7 @@ package AM.PM.Homepage.poll.controller;
 import AM.PM.Homepage.poll.request.PollCreateRequest;
 import AM.PM.Homepage.poll.request.PollSearchParam;
 import AM.PM.Homepage.poll.response.PollDetailResponse;
+import AM.PM.Homepage.poll.response.PollResultResponse;
 import AM.PM.Homepage.poll.response.PollSummaryResponse;
 import AM.PM.Homepage.poll.service.PollService;
 import AM.PM.Homepage.security.UserAuth;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +38,6 @@ public class PollController {
     @GetMapping
     public ResponseEntity<Page<PollSummaryResponse>> searchPoll(
             @Valid @ModelAttribute PollSearchParam params,
-            @PageableDefault(size = 20, sort = "deadlineAt", direction = Sort.Direction.ASC)
             Pageable pageable
     ) {
         Page<PollSummaryResponse> response = pollService.searchPoll(params, pageable);
@@ -45,17 +46,30 @@ public class PollController {
 
     // 투표 상세 조회
     @GetMapping("/{pollId}")
-    public ResponseEntity<PollDetailResponse> getPoll(@PathVariable Long pollId) {
-        PollDetailResponse response = pollService.getPoll(pollId);
+    public ResponseEntity<PollDetailResponse> getPoll(
+            @PathVariable Long pollId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        Long studentId = userAuth == null ? null : userAuth.getId();
+        PollDetailResponse response = pollService.getPollDetail(pollId, studentId);
         return ResponseEntity.ok(response);
     }
 
     // 투표 결과 집계
+    @GetMapping("/{pollId}/results")
+    public ResponseEntity<PollResultResponse> getPollResults(
+            @PathVariable Long pollId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        Long studentId = userAuth == null ? null : userAuth.getId();
+        PollResultResponse response = pollService.getPollResult(pollId, studentId);
+        return ResponseEntity.ok(response);
+    }
 
     // 투표 생성
     @PostMapping
     public ResponseEntity<PollSummaryResponse> createPoll(
-            @RequestBody PollCreateRequest request,
+            @Valid @RequestBody PollCreateRequest request,
             @AuthenticationPrincipal UserAuth userAuth
     ) {
         PollSummaryResponse response = pollService.create(request, userAuth.getId());

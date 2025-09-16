@@ -1,5 +1,6 @@
 package AM.PM.Homepage.poll.response;
 
+import AM.PM.Homepage.poll.entity.PollResultVisibility;
 import AM.PM.Homepage.poll.entity.PollStatus;
 import com.querydsl.core.annotations.QueryProjection;
 import java.time.LocalDateTime;
@@ -14,39 +15,29 @@ public class PollDetailResponse {
     private String title;
     private String description;
     private PollStatus status;
-
     private int maxSelect;
     private boolean multiple;
     private boolean anonymous;
     private boolean allowAddOption;
     private boolean allowRevote;
-
+    private PollResultVisibility resultVisibility;
     private LocalDateTime deadlineAt;
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime closedAt;
+    private boolean open;                       // 현재 투표 가능한지
 
-    private long totalVotes;
     private List<PollOptionResponse> options;
-    private Set<Long> mySelectedOptionIds;
 
-    public static PollDetailResponse of(
-            PollDetailResponse detail,
-            long totalVotes,
-            List<PollOptionResponse> options,
-            Set<Long> mySelectedOptionIds
-    ) {
-        detail.setTotalVotes(totalVotes);
-        detail.setOptions(options);
-        detail.setMySelectedOptionIds(mySelectedOptionIds);
-        return detail;
-    }
+    private boolean voted;                      // 내가 투표했는지
+    private Set<Long> mySelectedOptionIds;      // 내가 선택한 옵션
 
     @QueryProjection
     public PollDetailResponse(Long id, String title, String description, PollStatus status, int maxSelect,
                               boolean multiple, boolean anonymous, boolean allowAddOption, boolean allowRevote,
-                              LocalDateTime deadlineAt, Long createdBy, LocalDateTime createdAt, LocalDateTime updatedAt
-    ) {
+                              PollResultVisibility resultVisibility, LocalDateTime deadlineAt, Long createdBy,
+                              LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime closedAt) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -56,9 +47,18 @@ public class PollDetailResponse {
         this.anonymous = anonymous;
         this.allowAddOption = allowAddOption;
         this.allowRevote = allowRevote;
+        this.resultVisibility = resultVisibility;
         this.deadlineAt = deadlineAt;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.closedAt = closedAt;
+        this.open = isOpen(status, deadlineAt);
+    }
+
+    private static boolean isOpen(PollStatus status, LocalDateTime deadlineAt) {
+        return status == PollStatus.OPEN
+               && deadlineAt != null
+               && deadlineAt.isAfter(LocalDateTime.now());
     }
 }

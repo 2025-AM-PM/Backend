@@ -12,7 +12,6 @@ public class PollSummaryResponse {
     private final Long id;
     private final String title;
     private final PollStatus status;
-    private final Integer optionCount;
     private final Integer maxSelect;
     private final Boolean multiple;
     private final Boolean anonymous;
@@ -27,7 +26,6 @@ public class PollSummaryResponse {
                 poll.getId(),
                 poll.getTitle(),
                 poll.getStatus(),
-                poll.getOptions().size(),
                 poll.getMaxSelect(),
                 poll.isMultiple(),
                 poll.isAnonymous(),
@@ -43,7 +41,6 @@ public class PollSummaryResponse {
     public PollSummaryResponse(Long id,
                                String title,
                                PollStatus status,
-                               Integer optionCount,
                                Integer maxSelect,
                                Boolean multiple,
                                Boolean anonymous,
@@ -55,7 +52,6 @@ public class PollSummaryResponse {
         this.id = id;
         this.title = title;
         this.status = status;
-        this.optionCount = optionCount;
         this.maxSelect = maxSelect;
         this.multiple = multiple;
         this.anonymous = anonymous;

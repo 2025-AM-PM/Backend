@@ -1,5 +1,6 @@
 package AM.PM.Homepage.poll.request;
 
+import AM.PM.Homepage.poll.entity.PollResultVisibility;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -31,6 +32,8 @@ public class PollCreateRequest {
     private boolean allowAddOption;
 
     private boolean allowRevote = true;
+
+    private PollResultVisibility resultVisibility;
 
     @NotNull(message = "마감 시각은 필수")
     @Future(message = "마감 시각은 현재 이후여야 함")

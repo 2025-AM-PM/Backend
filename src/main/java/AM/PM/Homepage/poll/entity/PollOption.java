@@ -35,6 +35,7 @@ public class PollOption extends BaseTimeEntity {
     private String label;
 
     // student id, 없으면 null
+    @Column(name = "create_by")
     private Long createdBy;
 
     private PollOption(Poll poll, String label, Long createdBy) {
