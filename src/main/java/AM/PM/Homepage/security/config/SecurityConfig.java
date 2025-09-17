@@ -1,13 +1,12 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
+import AM.PM.Homepage.security.handler.LoginFailureHandler;
+import AM.PM.Homepage.security.handler.LoginSuccessHandler;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import AM.PM.Homepage.util.CookieProvider;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Collections;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,33 +14,22 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-@EnableWebSecurity
 @Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
-    private final StudentRepository studentRepository;
     private final RefreshTokenService refreshTokenService;
-    private final CookieProvider provider;
-
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtUtil jwtUtil,
-                          StudentRepository studentRepository, RefreshTokenService refreshTokenService,
-                          CookieProvider provider) {
-        this.authenticationConfiguration = authenticationConfiguration;
-        this.jwtUtil = jwtUtil;
-        this.studentRepository = studentRepository;
-        this.refreshTokenService = refreshTokenService;
-        this.provider = provider;
-    }
-
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -56,28 +44,21 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, CookieProvider cookieProvider) throws Exception {
+    public LoginSuccessHandler loginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
+        return new LoginSuccessHandler(jwtUtil, refreshTokenService);
+    }
+
+    @Bean
+    public LoginFailureHandler loginFailureHandler() {
+        return new LoginFailureHandler();
+    }
+
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
-
-                    @Override
-                    public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-
-                        CorsConfiguration configuration = new CorsConfiguration();
-
-                        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-                        configuration.setAllowedMethods(Collections.singletonList("*"));
-                        configuration.setAllowCredentials(true);
-                        configuration.setAllowedHeaders(Collections.singletonList("*"));
-                        configuration.setMaxAge(3600L);
-
-                        configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-                        configuration.setExposedHeaders(Collections.singletonList("access"));
-
-                        return configuration;
-                    }
-                }));
+                .cors(conf -> conf.configurationSource(corsConfigurationSource));
 
         //csrf disable
         http
@@ -106,9 +87,15 @@ public class SecurityConfig {
                                 "/temp" // 나중에 ADMIN 생기면 설정
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated());
+
+        StudentLoginFilter studentLoginFilter = new StudentLoginFilter(
+                authenticationManager(authenticationConfiguration));
+        studentLoginFilter.setFilterProcessesUrl("/api/student/login");
+        studentLoginFilter.setSuccessHandler(loginSuccessHandler(jwtUtil, refreshTokenService));
+        studentLoginFilter.setFailureHandler(loginFailureHandler());
+
         http
-                .addFilterAt(new StudentLoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
-                                refreshTokenService, studentRepository, cookieProvider),
+                .addFilterAt(studentLoginFilter,
                         UsernamePasswordAuthenticationFilter.class);
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), StudentLoginFilter.class);
@@ -118,21 +105,9 @@ public class SecurityConfig {
                 .sessionManagement((session) -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        http
+                .headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin));
+
         return http.build();
     }
-/*
-    @Bean
-    public UserDetailsService users(BCryptPasswordEncoder encoder) {
-        Student student =  Student.builder()
-                .studentName("김덕수")
-                .studentNumber("202117072")
-                .password(encoder.encode("990713"))
-                .studentRole("ROLE_USER")
-                .build();
-
-        UserAuth userAuth = new UserAuth(student);
-
-        return new InMemoryUserDetailsManager(userAuth);
-    }*/
-
 }

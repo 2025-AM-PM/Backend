@@ -15,7 +15,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
@@ -38,7 +37,6 @@ public class Notice extends BaseTimeEntity {
     @Column(name = "notice_type", nullable = false)
     private NoticeType noticeType;
 
-    @ColumnDefault("0")
     @Column(name = "views")
     private Integer views;
 
@@ -51,6 +49,7 @@ public class Notice extends BaseTimeEntity {
         this.content = content;
         this.noticeType = noticeType;
         this.url = url;
+        this.views = 0;
     }
 
     public void increaseViews() {

@@ -4,11 +4,9 @@ import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
+import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
-import AM.PM.Homepage.member.student.response.StudentInformationResponse;
-import AM.PM.Homepage.member.student.response.StudentResponse;
-import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
+import AM.PM.Homepage.member.student.response.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,10 +24,28 @@ public class StudentService {
     private final AlgorithmProfileService algorithmGradeService;
     private final PasswordEncoder bCryptPasswordEncoder;
 
-    @Transactional
-    public void changeStudentPassword(Long studentId, String password) {
-        findByStudentId(studentId)
-                .setPassword(bCryptPasswordEncoder.encode(password));
+    // 학생 회원가입
+        public Long signup(StudentSignupRequest request) {
+            if(studentRepository.existsByStudentNumber(request.getStudentNumber())) {
+                throw new IllegalArgumentException("이미 가입된 학번");
+            }
+
+            Student student = Student.signup(
+                    request.getStudentNumber(),
+                    "ROLE_USER",
+                    request.getStudentName(),
+                    bCryptPasswordEncoder.encode(request.getStudentPassword())
+            );
+
+            studentRepository.save(student);
+
+            return student.getId();
+        }
+
+        @Transactional
+        public void changeStudentPassword(Long studentId, String password) {
+            findByStudentId(studentId)
+                    .setPassword(bCryptPasswordEncoder.encode(password));
     }
 
     public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {
@@ -83,6 +99,26 @@ public class StudentService {
                 .build();
     }
 
+    public LoginSuccessResponse loadStudentInfo(Long id) {
+        Student byStudentId = findByStudentId(id);
+
+        return LoginSuccessResponse.builder()
+                .studentId(id)
+                .studentName(byStudentId.getStudentName())
+                .studentNumber(byStudentId.getStudentNumber())
+                .studentTier(byStudentId.getBaekjoonTier().getTier().toString())
+                .build();
+    }
+
+    public StudentResponse showStudentInformation(Long id) {
+        Student byStudentId = findByStudentId(id);
+
+        return StudentResponse.builder()
+                .studentName(byStudentId.getStudentName())
+                .studentNumber(byStudentId.getStudentNumber())
+                .build();
+    }
+
     public void registerStudent(List<StudentResponse> studentResponses) {
         List<Student> students = Student.from(studentResponses);
         studentRepository.saveAll(students);
@@ -95,6 +131,5 @@ public class StudentService {
     private Student findByStudentId(Long id) {
         return studentRepository.findById(id).orElseThrow(EntityNotFoundException::new);
     }
-
 
 }

@@ -64,6 +64,17 @@ public class Student {
         this.verificationToken = issuedVerificationToken();
     }
 
+    private Student(String studentNumber, String studentRole, String studentName, String password) {
+        this.studentNumber = studentNumber;
+        this.studentRole = studentRole;
+        this.studentName = studentName;
+        this.password = password;
+    }
+
+    public static Student signup(String studentNumber, String studentRole, String studentName, String encryptedPassword) {
+        return new Student(studentNumber, studentRole, studentName, encryptedPassword);
+    }
+
     public void linkAlgorithmProfile(AlgorithmProfile profile) {
         this.baekjoonTier = profile;
         profile.linkStudent(this);
