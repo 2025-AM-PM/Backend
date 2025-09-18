@@ -35,9 +35,9 @@ public class Exhibit extends BaseTimeEntity {
     @ColumnDefault("0")
     private Integer likes;
 
-    @Column(name = "exhibit_images")
-    @OneToMany(mappedBy = "exhibit", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ExhibitImage> images = new ArrayList<>();
+//    @Column(name = "exhibit_images")
+//    @OneToMany(mappedBy = "exhibit", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<ExhibitImage> images = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -64,31 +64,31 @@ public class Exhibit extends BaseTimeEntity {
         return student.getStudentNumber();
     }
 
-    public List<String> getAllImagePath() {
-        return images.stream()
-                .map(ExhibitImage::getUploadImagePath)
-                .toList();
-    }
-
-    public String getThumbnailPath() {
-        if (images == null || images.isEmpty()) {
-            return null;
-        }
-
-        return images.getFirst().getUploadImagePath();
-    }
-
-    public void addImage(ExhibitImage image) {
-        this.images.add(image);
-
-        if (image.getExhibit() != this) {
-            image.setExhibit(this);
-        }
-    }
-
-    public void clearImages() {
-        this.images.clear();
-    }
+//    public List<String> getAllImagePath() {
+//        return images.stream()
+//                .map(ExhibitImage::getUploadImagePath)
+//                .toList();
+//    }
+//
+//    public String getThumbnailPath() {
+//        if (images == null || images.isEmpty()) {
+//            return null;
+//        }
+//
+//        return images.getFirst().getUploadImagePath();
+//    }
+//
+//    public void addImage(ExhibitImage image) {
+//        this.images.add(image);
+//
+//        if (image.getExhibit() != this) {
+//            image.setExhibit(this);
+//        }
+//    }
+//
+//    public void clearImages() {
+//        this.images.clear();
+//    }
 
     public void update(String title,
                        String description,

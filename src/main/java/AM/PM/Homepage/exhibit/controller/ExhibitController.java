@@ -15,8 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 
 @RestController
@@ -40,22 +39,24 @@ public class ExhibitController {
 
     @PostMapping
     public ResponseEntity<ExhibitSummaryResponse> createExhibit(
-            @Valid @RequestPart("request") ExhibitCreateRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
+            @Valid @RequestBody ExhibitCreateRequest request,
+            //@RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
             @AuthenticationPrincipal UserAuth user
     ) throws FileUploadException {
-        ExhibitSummaryResponse response = exhibitService.createExhibit(request, imageFiles, user.getId());
+        //ExhibitSummaryResponse response = exhibitService.createExhibit(request, imageFiles, user.getId());
+        ExhibitSummaryResponse response = exhibitService.createExhibit(request, user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{exhibitId}")
     public ResponseEntity<ExhibitSummaryResponse> updateExhibit(
             @PathVariable Long exhibitId,
-            @Valid @RequestPart("request") ExhibitUpdateRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
+            @Valid @RequestBody ExhibitUpdateRequest request,
+            // @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles,
             @AuthenticationPrincipal UserAuth user
     ) throws FileUploadException {
-        ExhibitSummaryResponse response = exhibitService.updateExhibit(exhibitId, request, imageFiles, user);
+//        ExhibitSummaryResponse response = exhibitService.updateExhibit(exhibitId, request, imageFiles, user);
+        ExhibitSummaryResponse response = exhibitService.updateExhibit(exhibitId, request, user);
         return ResponseEntity.ok(response);
     }
 

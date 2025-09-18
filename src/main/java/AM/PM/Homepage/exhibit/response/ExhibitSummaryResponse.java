@@ -24,7 +24,7 @@ public class ExhibitSummaryResponse {
                 .title(exhibit.getTitle())
                 .exhibitUrl(exhibit.getExhibitUrl())
                 .likes(exhibit.getLikes())
-                .thumbnailUrl(exhibit.getThumbnailPath())
+//                .thumbnailUrl(exhibit.getThumbnailPath())
                 .createdAt(exhibit.getCreatedAt())
                 .build();
     }

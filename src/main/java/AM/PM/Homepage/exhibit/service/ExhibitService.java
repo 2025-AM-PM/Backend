@@ -2,8 +2,8 @@ package AM.PM.Homepage.exhibit.service;
 
 import AM.PM.Homepage.common.file.FileService;
 import AM.PM.Homepage.exhibit.entity.Exhibit;
-import AM.PM.Homepage.exhibit.entity.ExhibitImage;
-import AM.PM.Homepage.exhibit.repository.ExhibitImageRepository;
+//import AM.PM.Homepage.exhibit.entity.ExhibitImage;
+//import AM.PM.Homepage.exhibit.repository.ExhibitImageRepository;
 import AM.PM.Homepage.exhibit.repository.ExhibitRepository;
 import AM.PM.Homepage.exhibit.request.ExhibitCreateRequest;
 import AM.PM.Homepage.exhibit.request.ExhibitUpdateRequest;
@@ -32,7 +32,7 @@ public class ExhibitService {
 
     private final FileService fileService;
     private final ExhibitRepository exhibitRepository;
-    private final ExhibitImageRepository exhibitImageRepository;
+//    private final ExhibitImageRepository exhibitImageRepository;
     private final StudentRepository studentRepository;
 
     @Value("${upload.path.exhibit.image}")
@@ -52,7 +52,7 @@ public class ExhibitService {
 
     public ExhibitSummaryResponse createExhibit(
             ExhibitCreateRequest request,
-            List<MultipartFile> imageFiles,
+            //List<MultipartFile> imageFiles,
             Long studentId
     ) throws FileUploadException {
 
@@ -68,7 +68,7 @@ public class ExhibitService {
 
         Exhibit savedExhibit = exhibitRepository.save(exhibit);
 
-        addExhibitImageFiles(imageFiles, exhibit);
+        //addExhibitImageFiles(imageFiles, exhibit);
         log.debug("Exhibit 저장 완료: id={}, title={}", savedExhibit.getId(), savedExhibit.getTitle());
 
         return ExhibitSummaryResponse.from(savedExhibit);
@@ -77,7 +77,7 @@ public class ExhibitService {
     public ExhibitSummaryResponse updateExhibit(
             Long exhibitId,
             ExhibitUpdateRequest request,
-            List<MultipartFile> imageFiles,
+            //List<MultipartFile> imageFiles,
             UserAuth user
     ) throws FileUploadException {
 
@@ -86,10 +86,10 @@ public class ExhibitService {
 
         validateExhibitOwnership(exhibit, user);
 
-        if (imageFiles != null && !imageFiles.isEmpty()) {
-            deleteExhibitImages(exhibit);
-            addExhibitImageFiles(imageFiles, exhibit);
-        }
+//        if (imageFiles != null && !imageFiles.isEmpty()) {
+//            deleteExhibitImages(exhibit);
+//            addExhibitImageFiles(imageFiles, exhibit);
+//        }
 
         exhibit.update(
                 request.getTitle(),
@@ -107,45 +107,45 @@ public class ExhibitService {
 
         validateExhibitOwnership(exhibit, user);
 
-        deleteExhibitImages(exhibit);
+//        deleteExhibitImages(exhibit); // todo: 이미지 삭제 로직 구현
         exhibitRepository.delete(exhibit);
 
         log.debug("Exhibit 삭제 성공: title={}", exhibit.getTitle());
     }
 
-    private void addExhibitImageFiles(List<MultipartFile> imageFiles, Exhibit exhibit) throws FileUploadException {
-        if (imageFiles == null || imageFiles.isEmpty()) {
-            return;
-        }
+//    private void addExhibitImageFiles(List<MultipartFile> imageFiles, Exhibit exhibit) throws FileUploadException {
+//        if (imageFiles == null || imageFiles.isEmpty()) {
+//            return;
+//        }
+//
+//        for (MultipartFile imageFile : imageFiles) {
+//            if (imageFile.isEmpty()) {
+//                continue;
+//            }
+//
+//            String originalImageName = imageFile.getOriginalFilename();
+//            String uploadImagePath = fileService.storeFileToPath(imageFile, uploadDir);
+//            String uploadImageName = Paths.get(uploadImagePath).getFileName().toString();
+//
+//            ExhibitImage image = ExhibitImage.builder()
+//                    .originalImageName(originalImageName)
+//                    .uploadImageName(uploadImageName)
+//                    .uploadImagePath(uploadImagePath)
+//                    .exhibit(exhibit)
+//                    .build();
+//
+//            exhibitImageRepository.save(image);
+//            exhibit.addImage(image);
+//            log.debug("Exhibit 이미지 저장: {}", uploadImagePath);
+//        }
+//    }
 
-        for (MultipartFile imageFile : imageFiles) {
-            if (imageFile.isEmpty()) {
-                continue;
-            }
-
-            String originalImageName = imageFile.getOriginalFilename();
-            String uploadImagePath = fileService.storeFileToPath(imageFile, uploadDir);
-            String uploadImageName = Paths.get(uploadImagePath).getFileName().toString();
-
-            ExhibitImage image = ExhibitImage.builder()
-                    .originalImageName(originalImageName)
-                    .uploadImageName(uploadImageName)
-                    .uploadImagePath(uploadImagePath)
-                    .exhibit(exhibit)
-                    .build();
-
-            exhibitImageRepository.save(image);
-            exhibit.addImage(image);
-            log.debug("Exhibit 이미지 저장: {}", uploadImagePath);
-        }
-    }
-
-    private void deleteExhibitImages(Exhibit exhibit) {
-        List<ExhibitImage> images = exhibit.getImages();
-        images.forEach(img -> fileService.deleteFile(img.getUploadImagePath()));
-        exhibitImageRepository.deleteAll(images);
-        exhibit.clearImages();
-    }
+//    private void deleteExhibitImages(Exhibit exhibit) {
+//        List<ExhibitImage> images = exhibit.getImages();
+//        images.forEach(img -> fileService.deleteFile(img.getUploadImagePath()));
+//        exhibitImageRepository.deleteAll(images);
+//        exhibit.clearImages();
+//    }
 
     private static void validateExhibitOwnership(Exhibit exhibit, UserAuth user) {
         if (!exhibit.getStudentId().equals(user.getId())) {
