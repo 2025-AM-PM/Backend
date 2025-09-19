@@ -77,8 +77,10 @@ public class StudentController {
     public ResponseEntity<StudentInformationResponse> showStudentInformation(
             @RequestBody VerificationCodeRequest verificationCodeRequest,
             @AuthenticationPrincipal UserAuth userAuth) {
-
+        log.info("오류 전 - {}", verificationCodeRequest.toString());
+        log.info("오류 전 - {}", userAuth.getId().toString());
         if (!studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
+            log.info(verificationCodeRequest.toString());
             return ResponseEntity.badRequest().build();
         }
 
