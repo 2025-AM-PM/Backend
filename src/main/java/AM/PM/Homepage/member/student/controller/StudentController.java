@@ -77,13 +77,13 @@ public class StudentController {
     public ResponseEntity<StudentInformationResponse> showStudentInformation(
             @RequestBody VerificationCodeRequest verificationCodeRequest,
             @AuthenticationPrincipal UserAuth userAuth) {
-        log.info("오류 전 - {}", verificationCodeRequest.toString());
+        log.info("오류 전 - {}", verificationCodeRequest.getSolvedAcNickname());
         log.info("오류 전 - {}", userAuth.getId().toString());
         if (!studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
-            log.info(verificationCodeRequest.toString());
+            log.info("오류 후 - {}", verificationCodeRequest.getSolvedAcNickname());
             return ResponseEntity.badRequest().build();
         }
-
+        log.info("뜨면 안됨");
         StudentInformationResponse studentInformationResponse
                 = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), userAuth.getUsername());
 
