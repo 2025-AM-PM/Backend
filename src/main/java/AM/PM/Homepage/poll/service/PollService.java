@@ -284,6 +284,18 @@ public class PollService {
         return PollSummaryResponse.from(poll);
     }
 
+    // 투표 삭제 (생성자만)
+    public void delete(Long pollId, Long studentId) {
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 투표"));
+
+        if (!studentId.equals(poll.getCreatedBy())) {
+            throw new IllegalArgumentException("투표 생성자만 삭제 가능");
+        }
+
+        pollRepository.delete(poll);
+    }
+
     // 어드민인지 확인
     private boolean isAdmin(Long studentId) {
         if (studentId == null) {

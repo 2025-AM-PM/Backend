@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -101,4 +102,13 @@ public class PollController {
     // 투표 내용 수정
 
     // 투표 삭제
+    @DeleteMapping("/{pollId}")
+    public ResponseEntity<Void> deletePoll(
+            @PathVariable Long pollId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        Long studentId = userAuth == null ? null : userAuth.getId();
+        pollService.delete(pollId, studentId);
+        return ResponseEntity.noContent().build();
+    }
 }
