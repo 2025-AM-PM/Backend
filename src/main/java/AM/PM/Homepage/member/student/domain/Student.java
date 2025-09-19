@@ -69,6 +69,7 @@ public class Student {
         this.studentRole = studentRole;
         this.studentName = studentName;
         this.password = password;
+        this.verificationToken = issuedVerificationToken();
     }
 
     public static Student signup(String studentNumber, String studentRole, String studentName, String encryptedPassword) {
