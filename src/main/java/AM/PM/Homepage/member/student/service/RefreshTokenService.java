@@ -1,58 +1,48 @@
 package AM.PM.Homepage.member.student.service;
 
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.RefreshToken;
-import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import io.jsonwebtoken.ExpiredJwtException;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.Date;
-
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenService {
+
+    private static final String REFRESH = "refresh";
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final StudentRepository studentRepository;
     private final CookieProvider provider;
     private final JwtUtil jwtUtil;
 
-
+    @Transactional
     public void reissuedAccessToken(Long studentId, HttpServletRequest request, HttpServletResponse response) {
+        log.info("[액세스 토큰 재발급 요청] studentId={}", studentId);
 
-        String refreshToken = null;
-        Cookie[] cookies = request.getCookies();
-
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("refresh")) {
-                refreshToken = cookie.getValue();
-            }
+        if (!studentRepository.existsById(studentId)) {
+            log.warn("[재발급 실패] 학생 없음: studentId={}", studentId);
+            throw new CustomException(ErrorCode.NOT_FOUND_STUDENT);
         }
 
-        if(refreshToken == null) throw new RuntimeException("refresh token is null"); // custom exception
-
-        try {
-            jwtUtil.isExpired(refreshToken);
-        } catch (ExpiredJwtException e) {
-            e.printStackTrace();
-        }
-
-        String category = jwtUtil.getCategory(refreshToken);
-
-        if (!category.equals("refresh")) {
-            throw new RuntimeException("token is not Refresh");
-        }
+        String refreshToken = extractRefreshToken(request.getCookies());
+        validateRefreshToken(refreshToken);
 
         String username = jwtUtil.getUsername(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
@@ -60,15 +50,50 @@ public class RefreshTokenService {
         String newAccessToken = jwtUtil.generateAccessToken(studentId, username, role);
         String newRefreshToken = jwtUtil.generateRefreshToken(studentId, username, role);
 
-
         deleteRefreshToken(refreshToken);
         registerRefreshToken(newRefreshToken);
-        setResponseStatus(response, newAccessToken, newRefreshToken);
+        setResponseHeaders(response, newAccessToken, newRefreshToken);
+
+        log.info("[액세스 토큰 재발급 완료] studentId={}", studentId);
     }
 
-    private void setResponseStatus(HttpServletResponse response, String newAccessToken, String newRefreshToken) {
+    private String extractRefreshToken(Cookie[] cookies) {
+        if (cookies == null || cookies.length == 0) {
+            log.warn("[재발급 실패] 리프레시 쿠키 없음");
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
+        }
+        for (Cookie cookie : cookies) {
+            if (REFRESH.equals(cookie.getName())) {
+                String token = cookie.getValue();
+                if (token == null || token.isBlank()) {
+                    log.warn("[재발급 실패] 리프레시 토큰 비어있음");
+                    throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
+                }
+                return token;
+            }
+        }
+        log.warn("[재발급 실패] 리프레시 쿠키 미존재");
+        throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
+    }
+
+    private void validateRefreshToken(String refreshToken) {
+        try {
+            jwtUtil.isExpired(refreshToken);
+        } catch (ExpiredJwtException e) {
+            log.warn("[재발급 실패] 리프레시 토큰 만료");
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+
+        String category = jwtUtil.getCategory(refreshToken);
+        if (!REFRESH.equals(category)) {
+            log.warn("[재발급 실패] 잘못된 토큰 카테고리: {}", category);
+            throw new CustomException(ErrorCode.INVALID_TOKEN_CATEGORY);
+        }
+    }
+
+    private void setResponseHeaders(HttpServletResponse response, String newAccessToken, String newRefreshToken) {
         response.setHeader(AUTHORIZATION, newAccessToken);
-        response.addCookie(provider.createCookie("refresh", newRefreshToken));
+        response.addCookie(provider.createCookie(REFRESH, newRefreshToken));
     }
 
     private void deleteRefreshToken(String refreshToken) {
@@ -78,11 +103,9 @@ public class RefreshTokenService {
     public void registerRefreshToken(String newRefreshToken) {
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                 .refreshToken(newRefreshToken)
-                .expiration(new Date(System.currentTimeMillis() + JwtTokenExpirationTime.refreshExpirationHours).toString())
+                .expiration(
+                        new Date(System.currentTimeMillis() + JwtTokenExpirationTime.refreshExpirationHours).toString())
                 .build();
-
         refreshTokenRepository.save(refreshTokenEntity);
     }
-
-
 }

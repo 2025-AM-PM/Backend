@@ -1,5 +1,7 @@
 package AM.PM.Homepage.exhibit.service;
 
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.common.file.FileService;
 import AM.PM.Homepage.exhibit.entity.Exhibit;
 import AM.PM.Homepage.exhibit.entity.ExhibitImage;
@@ -45,8 +47,7 @@ public class ExhibitService {
 
     @Transactional(readOnly = true)
     public ExhibitResponse findExhibitById(Long id) {
-        Exhibit exhibit = exhibitRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 전시"));
+        Exhibit exhibit = findOrThrowExhibitById(id);
         return ExhibitResponse.from(exhibit);
     }
 
@@ -57,7 +58,7 @@ public class ExhibitService {
     ) throws FileUploadException {
 
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 학생 id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
         Exhibit exhibit = Exhibit.builder()
                 .title(request.getTitle())
@@ -81,8 +82,7 @@ public class ExhibitService {
             UserAuth user
     ) throws FileUploadException {
 
-        Exhibit exhibit = exhibitRepository.findById(exhibitId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 exhibit"));
+        Exhibit exhibit = findOrThrowExhibitById(exhibitId);
 
         validateExhibitOwnership(exhibit, user);
 
@@ -102,8 +102,7 @@ public class ExhibitService {
     }
 
     public void deleteExhibit(Long exhibitId, UserAuth user) {
-        Exhibit exhibit = exhibitRepository.findById(exhibitId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 exhibit"));
+        Exhibit exhibit = findOrThrowExhibitById(exhibitId);
 
         validateExhibitOwnership(exhibit, user);
 
@@ -147,9 +146,14 @@ public class ExhibitService {
         exhibit.clearImages();
     }
 
-    private static void validateExhibitOwnership(Exhibit exhibit, UserAuth user) {
+    private Exhibit findOrThrowExhibitById(Long id) {
+        return exhibitRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_EXHIBIT));
+    }
+
+    private void validateExhibitOwnership(Exhibit exhibit, UserAuth user) {
         if (!exhibit.getStudentId().equals(user.getId())) {
-            throw new IllegalArgumentException("해당 Exhibit 권한 없음");
+            throw new CustomException(ErrorCode.UNAUTHORIZED_EXHIBIT);
         }
     }
 }

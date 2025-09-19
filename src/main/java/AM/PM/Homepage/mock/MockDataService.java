@@ -23,8 +23,8 @@ public class MockDataService {
     public void mockSignup() {
         for (int i = 1; i <= 100; i++) {
             StudentSignupRequest request = new StudentSignupRequest(
-                    "000000" + i,
-                    "mock_student_" + i,
+                    "test" + i,
+                    "test_" + i,
                     "test" + i
             );
             Long studentId = studentService.signup(request);
