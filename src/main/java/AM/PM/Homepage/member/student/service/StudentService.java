@@ -86,14 +86,11 @@ public class StudentService {
 
     @Transactional
     public StudentInformationResponse linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
-        log.info("여기서 오류인가");
         Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
         SolvedAcInformationResponse solvedAcInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
-        log.info("여기서 오류인가22");
         AlgorithmProfile algorithmProfile = AlgorithmProfile.from(solvedAcInformationResponse);
 
         algorithmGradeService.registerAlgorithmGrade(algorithmProfile);
-        log.info("여기서 오류인가 222");
         student.linkAlgorithmProfile(algorithmProfile);
 
         return StudentInformationResponse.builder()
