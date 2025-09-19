@@ -52,12 +52,8 @@ public class StudentService {
 
     public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {
 
-        if (bCryptPasswordEncoder.matches(passwordChangeRequest.getRawCurrentPassword(), encodedPassword)
-                && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm())) {
-            return true;
-        }
-
-        throw new RuntimeException("."); // custom Exception
+        return bCryptPasswordEncoder.matches(passwordChangeRequest.getRawCurrentPassword(), encodedPassword)
+                && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm());
     }
 
     public Student findByStudentNumber(String studentNumber) {
