@@ -6,10 +6,7 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
-import AM.PM.Homepage.member.student.response.StudentInformationResponse;
-import AM.PM.Homepage.member.student.response.StudentResponse;
-import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
+import AM.PM.Homepage.member.student.response.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -99,6 +96,26 @@ public class StudentService {
         return StudentInformationResponse.builder()
                 .studentNumber(student.getStudentNumber())
                 .solvedAcInformationResponse(solvedAcInformationResponse)
+                .build();
+    }
+
+    public LoginSuccessResponse loadStudentInfo(Long id) {
+        Student byStudentId = findByStudentId(id);
+
+        return LoginSuccessResponse.builder()
+                .studentId(id)
+                .studentName(byStudentId.getStudentName())
+                .studentNumber(byStudentId.getStudentNumber())
+                .studentTier(byStudentId.getBaekjoonTier().getTier().toString())
+                .build();
+    }
+
+    public StudentResponse showStudentInformation(Long id) {
+        Student byStudentId = findByStudentId(id);
+
+        return StudentResponse.builder()
+                .studentName(byStudentId.getStudentName())
+                .studentNumber(byStudentId.getStudentNumber())
                 .build();
     }
 
