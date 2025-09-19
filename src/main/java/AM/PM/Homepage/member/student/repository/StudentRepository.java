@@ -1,5 +1,6 @@
 package AM.PM.Homepage.member.student.repository;
 
+import AM.PM.Homepage.member.student.domain.RefreshToken;
 import AM.PM.Homepage.member.student.domain.Student;
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +20,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     boolean existsByStudentNumber(String studentNumber);
 
     boolean existsByIdAndStudentRole(Long id, String studentRole);
+
+
 }
