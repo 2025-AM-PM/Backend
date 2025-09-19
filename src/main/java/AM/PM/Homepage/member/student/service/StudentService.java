@@ -44,10 +44,20 @@ public class StudentService {
             return student.getId();
         }
 
-        @Transactional
-        public void changeStudentPassword(Long studentId, String password) {
-            findByStudentId(studentId)
-                    .setPassword(bCryptPasswordEncoder.encode(password));
+    @Transactional
+    public void changeStudentPassword(Long studentId, PasswordChangeRequest request) {
+
+        if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
+            throw new IllegalArgumentException("새 비밀번호가 일치하지 않습니다.");
+        }
+
+        Student student = findByStudentId(studentId);
+
+        if (!bCryptPasswordEncoder.matches(request.getRawCurrentPassword(), student.getPassword())) {
+            throw new SecurityException("현재 비밀번호가 올바르지 않습니다.");
+        }
+
+        student.setPassword(bCryptPasswordEncoder.encode(request.getNewPassword()));
     }
 
     public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {

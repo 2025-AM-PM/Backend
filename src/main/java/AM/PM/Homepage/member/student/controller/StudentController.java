@@ -53,13 +53,7 @@ public class StudentController {
     @PostMapping("modify/password")
     public ResponseEntity<Void> changePassword(@RequestBody PasswordChangeRequest passwordChangeRequest,
                                                @AuthenticationPrincipal UserAuth userAuth) {
-
-        if (!studentService.checkPasswordMatch(userAuth.getPassword(), passwordChangeRequest)) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        studentService.changeStudentPassword(userAuth.getId(), passwordChangeRequest.getNewPassword());
-
+        studentService.changeStudentPassword(userAuth.getId(), passwordChangeRequest);
         return ResponseEntity.ok().build();
     }
 
