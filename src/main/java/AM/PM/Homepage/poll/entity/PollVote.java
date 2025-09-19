@@ -38,4 +38,11 @@ public class PollVote {
 
     @Column(name = "voted_at", nullable = false, updatable = false)
     private LocalDateTime votedAt;
+
+    public PollVote(Poll poll, PollOption option, Long voterId, LocalDateTime votedAt) {
+        this.poll = poll;
+        this.option = option;
+        this.voterId = voterId;
+        this.votedAt = votedAt;
+    }
 }

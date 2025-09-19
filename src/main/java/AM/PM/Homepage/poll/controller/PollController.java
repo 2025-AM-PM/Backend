@@ -2,6 +2,7 @@ package AM.PM.Homepage.poll.controller;
 
 import AM.PM.Homepage.poll.request.PollCreateRequest;
 import AM.PM.Homepage.poll.request.PollSearchParam;
+import AM.PM.Homepage.poll.request.PollVoteRequest;
 import AM.PM.Homepage.poll.response.PollDetailResponse;
 import AM.PM.Homepage.poll.response.PollResultResponse;
 import AM.PM.Homepage.poll.response.PollSummaryResponse;
@@ -12,9 +13,6 @@ import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,6 +75,15 @@ public class PollController {
     }
 
     // 투표
+    @PostMapping("/{pollId}/vote")
+    public ResponseEntity<Void> vote(
+            @Valid @RequestBody PollVoteRequest request,
+            @PathVariable Long pollId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        pollService.vote(request, pollId, userAuth.getId());
+        return ResponseEntity.noContent().build();
+    }
 
     // 투표 변경 (변경 가능한 경우만)
 

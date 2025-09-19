@@ -4,9 +4,13 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.poll.entity.Poll;
 import AM.PM.Homepage.poll.entity.PollOption;
 import AM.PM.Homepage.poll.entity.PollResultVisibility;
+import AM.PM.Homepage.poll.entity.PollVote;
+import AM.PM.Homepage.poll.repository.PollOptionRepository;
 import AM.PM.Homepage.poll.repository.PollRepository;
+import AM.PM.Homepage.poll.repository.PollVoteRepository;
 import AM.PM.Homepage.poll.request.PollCreateRequest;
 import AM.PM.Homepage.poll.request.PollSearchParam;
+import AM.PM.Homepage.poll.request.PollVoteRequest;
 import AM.PM.Homepage.poll.response.PollDetailResponse;
 import AM.PM.Homepage.poll.response.PollOptionResponse;
 import AM.PM.Homepage.poll.response.PollResultOptionResponse;
@@ -14,13 +18,18 @@ import AM.PM.Homepage.poll.response.PollResultResponse;
 import AM.PM.Homepage.poll.response.PollSummaryResponse;
 import AM.PM.Homepage.poll.response.PollVoteDto;
 import AM.PM.Homepage.poll.response.PollVoterResponse;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +43,8 @@ public class PollService {
 
     private final PollRepository pollRepository;
     private final StudentRepository studentRepository;
+    private final PollOptionRepository pollOptionRepository;
+    private final PollVoteRepository pollVoteRepository;
 
     // 전체 투표 검색
     @Transactional(readOnly = true)
@@ -66,7 +77,8 @@ public class PollService {
         // 비로그인
         if (studentId == null) {
             poll.setVoted(false);
-            log.debug("Unauthenticated viewer, return without my selections | pollId={}, tookMs={}", pollId, nanosToMs(t0));
+            log.debug("Unauthenticated viewer, return without my selections | pollId={}, tookMs={}", pollId,
+                    nanosToMs(t0));
             return poll;
         }
 
@@ -162,7 +174,8 @@ public class PollService {
     public PollSummaryResponse create(PollCreateRequest request, Long studentId) {
         long t0 = System.nanoTime();
         int optionSize = (request.getOptions() == null) ? 0 : request.getOptions().size();
-        log.debug("Create poll start | studentId={}, title='{}', optionSize={}, multiple={}, anonymous={}, maxSelect={}",
+        log.debug(
+                "Create poll start | studentId={}, title='{}', optionSize={}, multiple={}, anonymous={}, maxSelect={}",
                 studentId, request.getTitle(), optionSize, request.isMultiple(),
                 request.isAnonymous(), request.getMaxSelect());
 
@@ -183,11 +196,86 @@ public class PollService {
         return PollSummaryResponse.from(poll);
     }
 
+    // 투표
+    public void vote(PollVoteRequest request, Long pollId, Long studentId) {
+        // 0) 인증
+        if (studentId == null || !studentRepository.existsById(studentId)) {
+            throw new IllegalArgumentException("로그인 필수");
+        }
+
+        // 투표 상태 확인
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new IllegalArgumentException("찾을 수 없는 투표"));
+        if (!poll.isOpen()) {
+            throw new IllegalStateException("마감된 투표");
+        }
+
+        // 요청 정제 & 개수 검증
+        if (request.getOptionIds() == null) {
+            throw new IllegalArgumentException("선택 항목 없음");
+        }
+        var requested = new LinkedHashSet<>(request.getOptionIds()); // de-dup
+        if (!poll.isMultiple() && requested.size() != 1) {
+            throw new IllegalArgumentException("단일 선택 투표는 1개만 가능");
+        }
+        if (requested.size() > poll.getMaxSelect()) {
+            throw new IllegalArgumentException("최대 선택 수 초과: " + poll.getMaxSelect());
+        }
+
+        // 옵션 유효성: 모두 이 poll의 옵션인지 확인
+        var options = pollOptionRepository.findByPollIdAndIdIn(pollId, requested);
+        if (options.size() != requested.size()) {
+            throw new IllegalArgumentException("유효하지 않은 옵션 포함");
+        }
+        var optionMap = options.stream()
+                .collect(Collectors.toMap(PollOption::getId, o -> o));
+
+        // 기존 내 표 조회
+        var existingVotes = pollVoteRepository.findByPollIdAndVoterId(pollId, studentId);
+        var existing = existingVotes.stream()
+                .map(v -> v.getOption().getId())
+                .collect(Collectors.toSet());
+
+        // 재투표 정책
+        if (!existing.isEmpty() && !poll.isAllowRevote()) {
+            throw new IllegalStateException("재투표 불가");
+        }
+
+        // diff 계산
+        var toAdd = new HashSet<>(requested);
+        var toDel = new HashSet<>(existing);
+        toAdd.removeAll(existing);
+        toDel.removeAll(requested);
+
+        // 삭제
+        if (!toDel.isEmpty()) {
+            pollVoteRepository.deleteByPollIdAndVoterIdAndOptionIdIn(pollId, studentId, toDel);
+        }
+
+        // 추가
+        if (toAdd.isEmpty()) {
+            return;
+        }
+
+        var newVotes = toAdd.stream()
+                .map(optId ->
+                        new PollVote(poll, optionMap.get(optId), studentId, LocalDateTime.now()))
+                .toList();
+        try {
+            pollVoteRepository.saveAll(newVotes);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("이미 처리된 요청입니다.", e);
+        }
+        log.info("Poll vote | pollId={}, studentId={}, add={}, del={}", pollId, studentId, toAdd, toDel);
+    }
+
     // 어드민인지 확인
-    private boolean isAdmin(Long userId) {
-        if (userId == null) return false;
-        boolean admin = studentRepository.existsByIdAndStudentRole(userId, "ROLE_ADMIN");
-        log.debug("Admin check | userId={}, isAdmin={}", userId, admin);
+    private boolean isAdmin(Long studentId) {
+        if (studentId == null) {
+            return false;
+        }
+        boolean admin = studentRepository.existsByIdAndStudentRole(studentId, "ROLE_ADMIN");
+        log.debug("Admin check | studentId={}, isAdmin={}", studentId, admin);
         return admin;
     }
 
