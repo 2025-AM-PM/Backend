@@ -78,10 +78,9 @@ public class StudentController {
             @RequestBody VerificationCodeRequest verificationCodeRequest,
             @AuthenticationPrincipal UserAuth userAuth) {
 
-        if (studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
+        if (!studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
             return ResponseEntity.badRequest().build();
         }
-        ;
 
         StudentInformationResponse studentInformationResponse
                 = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), userAuth.getUsername());
