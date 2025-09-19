@@ -13,7 +13,7 @@ public class LoginSuccessResponse {
 
     private String studentNumber;
     private Long studentId;
-    private int studentTier;
+    private Integer studentTier;
     private String studentName;
 
 }

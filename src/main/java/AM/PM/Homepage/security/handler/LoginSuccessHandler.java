@@ -47,8 +47,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
         String studentName = principal.getName();
-        int byTier = repository.findByTier(studentId);
-        log.info(studentName);
+
+        Integer byTier = repository.findByTier(studentId);
 
         LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName, byTier);
 
@@ -61,7 +61,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         setResponseStatus(response, accessToken, refreshToken, loginSuccessResponse);
     }
 
-    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName, int studentTier) {
+    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName, Integer studentTier) {
         return LoginSuccessResponse.builder()
                 .studentNumber(studentNumber)
                 .studentId(studentId)
