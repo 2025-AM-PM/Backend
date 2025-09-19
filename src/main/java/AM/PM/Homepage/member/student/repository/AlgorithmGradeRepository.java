@@ -8,6 +8,6 @@ import java.util.Optional;
 
 public interface AlgorithmGradeRepository extends JpaRepository<AlgorithmProfile, Long> {
 
-    @Query("select a.id from AlgorithmProfile a where a.id = :id")
+    @Query("select a.tier from AlgorithmProfile a where a.id = :id")
     Optional<Integer> findByTier(Long id);
 }
