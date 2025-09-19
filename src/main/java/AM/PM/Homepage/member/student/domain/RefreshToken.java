@@ -15,9 +15,8 @@ public class RefreshToken {
 
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String refreshToken;
     private String expiration;
 

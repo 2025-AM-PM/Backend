@@ -56,7 +56,6 @@ public class RefreshTokenService {
 
         String username = jwtUtil.getUsername(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
-        Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
 
         String newAccessToken = jwtUtil.generateAccessToken(studentId, username, role);
         String newRefreshToken = jwtUtil.generateRefreshToken(studentId, username, role);
