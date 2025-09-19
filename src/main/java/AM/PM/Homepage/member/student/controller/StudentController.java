@@ -87,7 +87,7 @@ public class StudentController {
         }
         log.info("뜨면 안됨");
         StudentInformationResponse studentInformationResponse
-                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), userAuth.getUsername());
+                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), verificationCodeRequest.getSolvedAcNickname());
         if (studentInformationResponse == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
