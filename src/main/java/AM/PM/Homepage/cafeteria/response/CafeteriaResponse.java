@@ -17,10 +17,11 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class CafeteriaResponse {
 
-    private Long id;
     private String cafeteria;
-    private LocalDate mealDate;
-    private Integer mealPrice;
-    private String mealName;
     private String mealType;
+    private String corner;
+    private LocalDate mealDate;
+    private String mealName;
+    private String price;
+
 }

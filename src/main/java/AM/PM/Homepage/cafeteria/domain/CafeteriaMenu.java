@@ -36,6 +36,8 @@ public class CafeteriaMenu extends BaseEntity {
     @Column(name = "meal_type")
     private String mealType;
 
+    private String corner;
+
 
 
 
