@@ -5,7 +5,9 @@ import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;
 import AM.PM.Homepage.security.handler.LoginSuccessHandler;
+import AM.PM.Homepage.security.handler.LogoutHandlerImpl;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +32,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final LogoutHandlerImpl logoutHandler;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -107,6 +110,15 @@ public class SecurityConfig {
 
         http
                 .headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin));
+
+        http
+                .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/api/student/login")
+                .addLogoutHandler(logoutHandler)
+                .logoutSuccessHandler((request, response, authentication) ->
+                        response.setStatus(HttpServletResponse.SC_OK)) // 로그아웃 성공 시 200 OK 응답
+                );
 
         return http.build();
     }

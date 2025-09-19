@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.Iterator;
 import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
+@Slf4j
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -40,8 +42,10 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         Long studentId = principal.getId();
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
+        String studentName = principal.getName();
+        log.info(studentName);
 
-        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId);
+        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName);
 
         String accessToken = jwtUtil.generateAccessToken(studentId, studentNumber, role);
         String refreshToken = jwtUtil.generateRefreshToken(studentId,studentNumber, role);
@@ -52,11 +56,12 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         setResponseStatus(response, accessToken, refreshToken, loginSuccessResponse);
     }
 
-    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId) {
+    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName) {
         return LoginSuccessResponse.builder()
                 .studentNumber(studentNumber)
                 .studentId(studentId)
                 .studentTier(null)
+                .studentName(studentName)
                 .build();
     }
 
@@ -68,6 +73,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void setResponseStatus(HttpServletResponse response, String accessToken, String refreshToken, String successResponse) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         response.setHeader(AUTHORIZATION, "Bearer " + accessToken);
         response.addCookie(createCookie(REFRESH_TOKEN.getValue(), refreshToken));
         response.setStatus(HttpStatus.OK.value());
