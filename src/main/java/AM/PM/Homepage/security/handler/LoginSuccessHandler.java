@@ -48,8 +48,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String role = getAuthority(authentication);
         String studentName = principal.getName();
 
-        Integer byTier = repository.findByTier(studentId);
-
+        Integer byTier = repository.findByTier(studentId).orElse(0);
         LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName, byTier);
 
         String accessToken = jwtUtil.generateAccessToken(studentId, studentNumber, role);

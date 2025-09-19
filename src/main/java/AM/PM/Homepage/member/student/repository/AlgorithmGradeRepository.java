@@ -4,8 +4,10 @@ import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 public interface AlgorithmGradeRepository extends JpaRepository<AlgorithmProfile, Long> {
 
     @Query("select a.id from AlgorithmProfile a where a.id = :id")
-    Integer findByTier(Long id);
+    Optional<Integer> findByTier(Long id);
 }
