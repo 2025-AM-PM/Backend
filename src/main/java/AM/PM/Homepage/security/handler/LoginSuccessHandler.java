@@ -1,6 +1,8 @@
 package AM.PM.Homepage.security.handler;
 
+import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
+import AM.PM.Homepage.member.student.service.AlgorithmProfileService;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
@@ -27,11 +29,13 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final AlgorithmGradeRepository repository;
     private static final int COOKIE_MAX_AGE = 24*60*60;
 
-    public LoginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
+    public LoginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService, AlgorithmGradeRepository repository) {
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
+        this.repository = repository;
     }
 
     @Override
@@ -43,9 +47,10 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String studentNumber = authentication.getName();
         String role = getAuthority(authentication);
         String studentName = principal.getName();
+        int byTier = repository.findByTier(studentId);
         log.info(studentName);
 
-        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName);
+        LoginSuccessResponse successResponse = initLoginSuccessResponse(studentNumber, studentId, studentName, byTier);
 
         String accessToken = jwtUtil.generateAccessToken(studentId, studentNumber, role);
         String refreshToken = jwtUtil.generateRefreshToken(studentId,studentNumber, role);
@@ -56,11 +61,11 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         setResponseStatus(response, accessToken, refreshToken, loginSuccessResponse);
     }
 
-    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName) {
+    private static LoginSuccessResponse initLoginSuccessResponse(String studentNumber, Long studentId, String studentName, int studentTier) {
         return LoginSuccessResponse.builder()
                 .studentNumber(studentNumber)
                 .studentId(studentId)
-                .studentTier(null)
+                .studentTier(studentTier)
                 .studentName(studentName)
                 .build();
     }

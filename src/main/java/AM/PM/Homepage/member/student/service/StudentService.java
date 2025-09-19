@@ -52,8 +52,8 @@ public class StudentService {
 
     public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {
 
-        if(encodedPassword.equals(passwordChangeRequest.getRawCurrentPassword())
-            && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm())) {
+        if (bCryptPasswordEncoder.matches(passwordChangeRequest.getRawCurrentPassword(), encodedPassword)
+                && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm())) {
             return true;
         }
 
@@ -106,7 +106,7 @@ public class StudentService {
                 .studentId(id)
                 .studentName(byStudentId.getStudentName())
                 .studentNumber(byStudentId.getStudentNumber())
-                .studentTier(byStudentId.getBaekjoonTier().getTier().toString())
+                .studentTier(byStudentId.getBaekjoonTier().getTier())
                 .build();
     }
 
