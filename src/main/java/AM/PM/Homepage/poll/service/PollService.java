@@ -269,6 +269,21 @@ public class PollService {
         log.info("Poll vote | pollId={}, studentId={}, add={}, del={}", pollId, studentId, toAdd, toDel);
     }
 
+    // 투표 강제 마감 (생성자만)
+    public PollSummaryResponse close(Long pollId, Long studentId) {
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 투표"));
+
+        if (!studentId.equals(poll.getCreatedBy())) {
+            throw new IllegalArgumentException("투표 생성자만 마감 가능");
+        }
+
+        poll.close();
+        pollRepository.save(poll);
+
+        return PollSummaryResponse.from(poll);
+    }
+
     // 어드민인지 확인
     private boolean isAdmin(Long studentId) {
         if (studentId == null) {
