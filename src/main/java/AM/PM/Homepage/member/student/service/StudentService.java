@@ -9,6 +9,7 @@ import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
 import AM.PM.Homepage.member.student.response.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudentService {
 
     private final StudentRepository studentRepository;
@@ -84,13 +86,14 @@ public class StudentService {
 
     @Transactional
     public StudentInformationResponse linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
-
+        log.info("여기서 오류인가");
         Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
         SolvedAcInformationResponse solvedAcInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
+        log.info("여기서 오류인가22");
         AlgorithmProfile algorithmProfile = AlgorithmProfile.from(solvedAcInformationResponse);
 
         algorithmGradeService.registerAlgorithmGrade(algorithmProfile);
-
+        log.info("여기서 오류인가 222");
         student.linkAlgorithmProfile(algorithmProfile);
 
         return StudentInformationResponse.builder()
