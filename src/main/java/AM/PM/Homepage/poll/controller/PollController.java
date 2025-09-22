@@ -86,16 +86,13 @@ public class PollController {
         return ResponseEntity.noContent().build();
     }
 
-    // 투표 항목 생성 (허용된 경우만)
-
     // 투표 강제 마감 (생성자만)
     @PostMapping("/{pollId}/close")
     public ResponseEntity<PollSummaryResponse> closePoll(
             @PathVariable Long pollId,
             @AuthenticationPrincipal UserAuth userAuth
     ) {
-        Long studentId = userAuth == null ? null : userAuth.getId();
-        PollSummaryResponse response = pollService.close(pollId, studentId);
+        PollSummaryResponse response = pollService.close(pollId, userAuth.getId());
         return ResponseEntity.ok(response);
     }
 

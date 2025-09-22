@@ -15,7 +15,6 @@ public class PollSummaryResponse {
     private final Integer maxSelect;
     private final Boolean multiple;
     private final Boolean anonymous;
-    private final Boolean allowAddOption;
     private final Boolean allowRevote;
     private final LocalDateTime deadlineAt;
     private final Long createdBy;
@@ -29,7 +28,6 @@ public class PollSummaryResponse {
                 poll.getMaxSelect(),
                 poll.isMultiple(),
                 poll.isAnonymous(),
-                poll.isAllowAddOption(),
                 poll.isAllowRevote(),
                 poll.getDeadlineAt(),
                 poll.getCreatedBy(),
@@ -44,7 +42,6 @@ public class PollSummaryResponse {
                                Integer maxSelect,
                                Boolean multiple,
                                Boolean anonymous,
-                               Boolean allowAddOption,
                                Boolean allowRevote,
                                LocalDateTime deadlineAt,
                                Long createdBy,
@@ -55,7 +52,6 @@ public class PollSummaryResponse {
         this.maxSelect = maxSelect;
         this.multiple = multiple;
         this.anonymous = anonymous;
-        this.allowAddOption = allowAddOption;
         this.allowRevote = allowRevote;
         this.deadlineAt = deadlineAt;
         this.createdBy = createdBy;
