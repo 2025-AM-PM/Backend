@@ -18,15 +18,13 @@ public class RefreshTokenController {
 
     private final RefreshTokenService refreshTokenService;
 
-
     @PostMapping("/reissue")
-    public ResponseEntity<?> reissueRefreshToken(@AuthenticationPrincipal UserAuth userAuth ,
-                                                 HttpServletRequest request,
-                                                 HttpServletResponse response) {
-
+    public ResponseEntity<?> reissueRefreshToken(
+            @AuthenticationPrincipal UserAuth userAuth,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         refreshTokenService.reissuedAccessToken(userAuth.getId(), request, response);
-
         return ResponseEntity.ok().build();
     }
-
 }

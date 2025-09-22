@@ -4,13 +4,15 @@ import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
-import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import AM.PM.Homepage.member.student.response.*;
-import java.util.List;
+import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
+import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
+import AM.PM.Homepage.member.student.response.StudentInformationResponse;
+import AM.PM.Homepage.member.student.response.StudentResponse;
+import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -134,7 +136,9 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public StudentResponse showStudentInformation(Long id) {
+        log.info("[내정보 조회] 조회 시도 studentId={}", id);
         Student s = findByStudentId(id);
+        log.info("[내정보 조회] 조회 시도 studentId={}", id);
         return StudentResponse.builder()
                 .studentName(s.getStudentName())
                 .studentNumber(s.getStudentNumber())

@@ -10,7 +10,7 @@ public enum StudentRole {
     PRESIDENT,          // 회장, 부회장
     SYSTEM_ADMIN;       // 시스템 관리자
 
-    public String getTitle() {
+    public String getAuthority() {
         return "ROLE_" + this.name();
     }
 

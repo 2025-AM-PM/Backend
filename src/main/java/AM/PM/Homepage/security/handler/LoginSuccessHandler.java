@@ -10,7 +10,6 @@ import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;

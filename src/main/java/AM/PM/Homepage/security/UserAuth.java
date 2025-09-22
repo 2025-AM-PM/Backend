@@ -21,7 +21,7 @@ public class UserAuth implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.getTitle()));
+        return List.of(new SimpleGrantedAuthority(role.getAuthority()));
     }
 
     // 비밀번호 사용 안 함
@@ -32,6 +32,6 @@ public class UserAuth implements UserDetails {
 
     @Override
     public String getUsername() {
-        return studentName;
+        return studentNumber;
     }
 }

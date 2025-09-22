@@ -67,7 +67,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtFilter jwtFilter() {
+    public JwtFilter jwtFilter() {
         return new JwtFilter(jwtUtil, studentRepository);
     }
 

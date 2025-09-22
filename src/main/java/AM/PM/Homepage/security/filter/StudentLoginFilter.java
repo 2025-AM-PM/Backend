@@ -2,8 +2,6 @@ package AM.PM.Homepage.security.filter;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import AM.PM.Homepage.common.exception.CustomException;
-import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.request.AuthenticationRequest;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;
 import AM.PM.Homepage.security.handler.LoginSuccessHandler;

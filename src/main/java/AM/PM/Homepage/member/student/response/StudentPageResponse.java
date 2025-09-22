@@ -7,7 +7,6 @@ import lombok.Setter;
 @Setter
 public class StudentPageResponse {
 
-
     private String studentName;
     private SolvedAcInformationResponse solvedAcInformationResponse;
 

@@ -54,8 +54,9 @@ public class JwtUtil {
     }
 
     public StudentRole getRole(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
-                .get(JWT_PAYLOAD_ROLE, StudentRole.class);
+        String roleName = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+                .get(JWT_PAYLOAD_ROLE, String.class);
+        return StudentRole.valueOf(roleName);
     }
 
     public String getCategory(String token) {
@@ -92,7 +93,7 @@ public class JwtUtil {
 
         StudentRole role = claims.get(JWT_PAYLOAD_ROLE, StudentRole.class);
         Collection<? extends GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority(role.getTitle()));
+                Collections.singletonList(new SimpleGrantedAuthority(role.getAuthority()));
 
         Long id = claims.get(JWT_PAYLOAD_ID, Long.class);
 
@@ -139,7 +140,7 @@ public class JwtUtil {
                 .subject(studentId.toString())
                 .claim(JWT_PAYLOAD_CATEGORY, category)
                 .claim(JWT_PAYLOAD_USERNAME, username)
-                .claim(JWT_PAYLOAD_ROLE, role)
+                .claim(JWT_PAYLOAD_ROLE, role.name())
                 .claim(JWT_PAYLOAD_ID, studentId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))

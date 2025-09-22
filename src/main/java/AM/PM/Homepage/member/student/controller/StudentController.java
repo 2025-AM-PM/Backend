@@ -11,12 +11,9 @@ import AM.PM.Homepage.security.UserAuth;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -77,7 +74,8 @@ public class StudentController {
             return ResponseEntity.badRequest().build();
         }
         StudentInformationResponse studentInformationResponse
-                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), verificationCodeRequest.getSolvedAcNickname());
+                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(),
+                verificationCodeRequest.getSolvedAcNickname());
 
         return ResponseEntity.ok(studentInformationResponse);
     }
@@ -90,5 +88,4 @@ public class StudentController {
         return ResponseEntity.ok(
                 studentService.showStudentInformationForTest(request.getSolvedAcNickname(), userAuth.getUsername()));
     }
-
 }
