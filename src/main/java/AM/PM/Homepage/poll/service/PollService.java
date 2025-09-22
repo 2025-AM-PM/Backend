@@ -13,9 +13,21 @@ import AM.PM.Homepage.poll.repository.PollVoteRepository;
 import AM.PM.Homepage.poll.request.PollCreateRequest;
 import AM.PM.Homepage.poll.request.PollSearchParam;
 import AM.PM.Homepage.poll.request.PollVoteRequest;
-import AM.PM.Homepage.poll.response.*;
+import AM.PM.Homepage.poll.response.PollDetailResponse;
+import AM.PM.Homepage.poll.response.PollOptionResponse;
+import AM.PM.Homepage.poll.response.PollResultOptionResponse;
+import AM.PM.Homepage.poll.response.PollResultResponse;
+import AM.PM.Homepage.poll.response.PollSummaryResponse;
+import AM.PM.Homepage.poll.response.PollVoteDto;
+import AM.PM.Homepage.poll.response.PollVoterResponse;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,58 +51,48 @@ public class PollService {
     // 전체 투표 검색
     @Transactional(readOnly = true)
     public Page<PollSummaryResponse> searchPoll(PollSearchParam params, Pageable pageable) {
-        long t0 = System.nanoTime();
         log.debug("[투표 검색 시작] params={}, pageable={}", params, pageable);
 
         Page<PollSummaryResponse> page = pollRepository.searchByParam(params, pageable);
 
-        log.debug("[투표 검색 종료] 전체 개수={}, 전체 페이지={}, 소요시간={}ms",
-                page.getTotalElements(), page.getTotalPages(), nanosToMs(t0));
+        log.debug("[투표 검색 종료] 전체 개수={}, 전체 페이지={}", page.getTotalElements(), page.getTotalPages());
         return page;
     }
 
     // 투표 상세 조회
     @Transactional(readOnly = true)
     public PollDetailResponse getPollDetail(Long pollId, Long studentId) {
-        long t0 = System.nanoTime();
         log.debug("[투표 상세 조회 시작] pollId={}, studentId={}", pollId, studentId);
 
-        var opt = pollRepository.findPollDetailResponseById(pollId);
-        if (opt.isEmpty()) {
-            log.warn("[투표 상세 조회 실패] 존재하지 않는 투표 | pollId={}", pollId);
-            throw new CustomException(ErrorCode.NOT_FOUND_POLL);
-        }
-        PollDetailResponse poll = opt.get();
+        PollDetailResponse pollResponse = pollRepository.findPollDetailResponseById(pollId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POLL));
 
         List<PollOptionResponse> options = pollRepository.findPollOptionResponsesByPollId(pollId);
-        poll.setOptions(options);
+        pollResponse.setOptions(options);
         log.debug("[투표 옵션 로드 완료] pollId={}, 옵션 수={}", pollId, options.size());
 
         // 비로그인
         if (studentId == null) {
-            poll.setVoted(false);
-            log.debug("[투표 상세 조회 완료] 비로그인 사용자, 내 선택 없음 | pollId={}, 소요시간={}ms", pollId, nanosToMs(t0));
-            return poll;
+            pollResponse.setVoted(false);
+            log.debug("[투표 상세 조회 완료] 비로그인 사용자, 내 선택 없음 | pollId={}", pollId);
+            return pollResponse;
         }
 
         Set<Long> mySelectedOptionIds = pollRepository.findOptionIdsByPollIdAndUserId(pollId, studentId);
-        poll.setMySelectedOptionIds(mySelectedOptionIds);
-        poll.setVoted(!mySelectedOptionIds.isEmpty());
-        log.debug("[투표 상세 조회 완료] 내 선택 개수={} | pollId={}, studentId={}, 소요시간={}ms",
-                mySelectedOptionIds.size(), pollId, studentId, nanosToMs(t0));
-        return poll;
+        pollResponse.setMySelectedOptionIds(mySelectedOptionIds);
+        pollResponse.setVoted(!mySelectedOptionIds.isEmpty());
+        log.debug("[투표 상세 조회 완료] 내 선택 개수={} | pollId={}, studentId={}", mySelectedOptionIds.size(), pollId, studentId);
+        return pollResponse;
     }
 
     // 투표 결과 조회
     @Transactional(readOnly = true)
     public PollResultResponse getPollResult(Long pollId, Long studentId) {
-        long t0 = System.nanoTime();
         log.debug("[투표 결과 조회 시작] pollId={}, studentId={}", pollId, studentId);
 
         PollResultResponse result = new PollResultResponse();
         var opt = pollRepository.findPollDetailResponseById(pollId);
         if (opt.isEmpty()) {
-            log.warn("[투표 결과 조회 실패] 존재하지 않는 투표 | pollId={}", pollId);
             throw new CustomException(ErrorCode.NOT_FOUND_POLL);
         }
         PollDetailResponse poll = opt.get();
@@ -143,17 +145,15 @@ public class PollService {
                 .toList();
 
         result.setOptions(options);
-        log.debug("[투표 결과 조회 완료] pollId={}, 옵션 수={}, 소요시간={}ms", pollId, options.size(), nanosToMs(t0));
+        log.debug("[투표 결과 조회 완료] pollId={}, 옵션 수={}", pollId, options.size());
         return result;
     }
 
     // 투표 생성
     public PollSummaryResponse create(PollCreateRequest request, Long studentId) {
-        long t0 = System.nanoTime();
         log.info("[투표 생성 요청] studentId={}, 제목='{}'", studentId, request.getTitle());
 
         if (studentId == null || !studentRepository.existsById(studentId)) {
-            log.warn("[투표 생성 실패] 인증되지 않은 사용자 | studentId={}", studentId);
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
@@ -164,21 +164,18 @@ public class PollService {
 
         pollRepository.save(poll);
         log.info("[투표 생성 성공] pollId={}, 제목='{}', 생성자={}", poll.getId(), poll.getTitle(), studentId);
-        log.debug("[투표 생성 완료] 소요시간={}ms", nanosToMs(t0));
         return PollSummaryResponse.from(poll);
     }
 
     // 투표하기
     public void vote(PollVoteRequest request, Long pollId, Long studentId) {
         if (studentId == null || !studentRepository.existsById(studentId)) {
-            log.warn("[투표 실패] 인증되지 않은 사용자 | pollId={}, studentId={}", pollId, studentId);
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POLL));
         if (!poll.isOpen()) {
-            log.warn("[투표 실패] 마감된 투표 | pollId={}, studentId={}", pollId, studentId);
             throw new CustomException(ErrorCode.CLOSED_POLL);
         }
 
@@ -203,7 +200,6 @@ public class PollService {
         var existing = existingVotes.stream().map(v -> v.getOption().getId()).collect(Collectors.toSet());
 
         if (!existing.isEmpty() && !poll.isAllowRevote()) {
-            log.warn("[투표 실패] 재투표 불가 | pollId={}, studentId={}", pollId, studentId);
             throw new CustomException(ErrorCode.RE_VOTE_NOT_ALLOWED);
         }
 
@@ -223,7 +219,7 @@ public class PollService {
             try {
                 pollVoteRepository.saveAll(newVotes);
             } catch (DataIntegrityViolationException e) {
-                log.error("[투표 실패] 중복 요청 | pollId={}, studentId={}", pollId, studentId, e);
+                log.warn("[투표 실패: 중복 요청] pollId={}, studentId={}", pollId, studentId);
                 throw new CustomException(ErrorCode.DUPLICATE_VOTE_REQUEST);
             }
         }
@@ -233,11 +229,14 @@ public class PollService {
 
     // 투표 강제 마감 (생성자만)
     public PollSummaryResponse close(Long pollId, Long studentId) {
+        if (studentId == null) {
+            throw new CustomException(ErrorCode.FORBIDDEN_POLL_CLOSE);
+        }
+
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POLL));
 
         if (!studentId.equals(poll.getCreatedBy())) {
-            log.warn("[투표 마감 실패] 생성자 아님 | pollId={}, studentId={}", pollId, studentId);
             throw new CustomException(ErrorCode.FORBIDDEN_POLL_CLOSE);
         }
 
@@ -253,7 +252,6 @@ public class PollService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POLL));
 
         if (!studentId.equals(poll.getCreatedBy())) {
-            log.warn("[투표 삭제 실패] 생성자 아님 | pollId={}, studentId={}", pollId, studentId);
             throw new CustomException(ErrorCode.FORBIDDEN_POLL_DELETE);
         }
 
@@ -269,9 +267,5 @@ public class PollService {
         boolean admin = studentRepository.existsByIdAndStudentRole(studentId, "ROLE_ADMIN");
         log.debug("[어드민 확인] studentId={}, isAdmin={}", studentId, admin);
         return admin;
-    }
-
-    private long nanosToMs(long startedAtNanos) {
-        return (System.nanoTime() - startedAtNanos) / 1_000_000L;
     }
 }
