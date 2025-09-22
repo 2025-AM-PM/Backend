@@ -31,8 +31,6 @@ public class PollController {
 
     private final PollService pollService;
 
-    // TODO: 투표 기능 완성
-
     // 투표 검색
     @GetMapping
     public ResponseEntity<Page<PollSummaryResponse>> searchPoll(
@@ -95,8 +93,6 @@ public class PollController {
         PollSummaryResponse response = pollService.close(pollId, userAuth.getId());
         return ResponseEntity.ok(response);
     }
-
-    // 투표 내용 수정
 
     // 투표 삭제
     @DeleteMapping("/{pollId}")
