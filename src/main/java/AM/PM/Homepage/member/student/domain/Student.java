@@ -1,15 +1,25 @@
 package AM.PM.Homepage.member.student.domain;
 
 import AM.PM.Homepage.exhibit.entity.Exhibit;
-import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
 import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.util.ArrayList;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import java.util.List;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Builder
@@ -28,7 +38,7 @@ public class Student {
     private String studentNumber;
 
     @Column(name = "student_role", nullable = false)
-    private String studentRole;
+    private StudentRole role;
 
     @Column(name = "student_name")
     private String studentName;
@@ -43,10 +53,6 @@ public class Student {
     @JoinColumn(name = "algorithm_profile_id")
     private AlgorithmProfile baekjoonTier;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "refresh_token_id")
-    private RefreshToken refreshToken;
-
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Exhibit> exhibits;
 
@@ -56,24 +62,16 @@ public class Student {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyGroupApplication> studyGroupApplications;
 
-    public Student(StudentResponse response) {
-        this.studentNumber = response.getStudentNumber();
-        this.studentRole = "ROLE_USER";
-        this.studentName = response.getStudentName();
-        this.password = response.getPhoneNumber();
-        this.verificationToken = issuedVerificationToken();
-    }
-
-    private Student(String studentNumber, String studentRole, String studentName, String password) {
+    private Student(String studentNumber, StudentRole role, String studentName, String password) {
         this.studentNumber = studentNumber;
-        this.studentRole = studentRole;
+        this.role = role;
         this.studentName = studentName;
         this.password = password;
         this.verificationToken = issuedVerificationToken();
     }
 
-    public static Student signup(String studentNumber, String studentRole, String studentName, String encryptedPassword) {
-        return new Student(studentNumber, studentRole, studentName, encryptedPassword);
+    public static Student signup(String studentNumber, String studentName, String encryptedPassword) {
+        return new Student(studentNumber, StudentRole.USER, studentName, encryptedPassword);
     }
 
     public void linkAlgorithmProfile(AlgorithmProfile profile) {
@@ -81,16 +79,7 @@ public class Student {
         profile.linkStudent(this);
     }
 
-    public static List<Student> from(List<StudentResponse> response) {
-
-        return response.stream()
-                .map(Student::new)
-                .toList();
-    }
-
     public String issuedVerificationToken() {
         return UUID.randomUUID().toString();
     }
-
-
 }

@@ -114,7 +114,7 @@ public class PollService {
         }
 
         // 내 선택
-        Set<Long> mySelectedOptionIds = Set.of();
+        Set<Long> mySelectedOptionIds;
         if (studentId != null) {
             mySelectedOptionIds = pollRepository.findOptionIdsByPollIdAndUserId(pollId, studentId);
             result.setMySelectedOptionIds(mySelectedOptionIds);
@@ -264,8 +264,8 @@ public class PollService {
         if (studentId == null) {
             return false;
         }
-        boolean admin = studentRepository.existsByIdAndStudentRole(studentId, "ROLE_ADMIN");
-        log.debug("[어드민 확인] studentId={}, isAdmin={}", studentId, admin);
-        return admin;
+        return studentRepository.findById(studentId)
+                .map(student -> student.getRole().isAdmin())
+                .orElse(false);
     }
 }

@@ -4,6 +4,7 @@ import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
@@ -31,13 +32,11 @@ public class StudentService {
         log.info("[학생 가입 요청] studentNumber={}, name={}", request.getStudentNumber(), request.getStudentName());
 
         if (studentRepository.existsByStudentNumber(request.getStudentNumber())) {
-            log.warn("[학생 가입 실패] 중복 학번: {}", request.getStudentNumber());
             throw new CustomException(ErrorCode.DUPLICATE_STUDENT_NUMBER);
         }
 
         Student student = Student.signup(
                 request.getStudentNumber(),
-                "ROLE_USER",
                 request.getStudentName(),
                 bCryptPasswordEncoder.encode(request.getStudentPassword())
         );
@@ -52,14 +51,12 @@ public class StudentService {
         log.info("[비밀번호 변경 요청] studentId={}", studentId);
 
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
-            log.warn("[비밀번호 변경 실패] 새 비밀번호 불일치: studentId={}", studentId);
             throw new CustomException(ErrorCode.PASSWORD_NEW_MISMATCH);
         }
 
         Student student = findByStudentId(studentId);
 
         if (!bCryptPasswordEncoder.matches(request.getRawCurrentPassword(), student.getPassword())) {
-            log.warn("[비밀번호 변경 실패] 현재 비밀번호 불일치: studentId={}", studentId);
             throw new CustomException(ErrorCode.INVALID_CURRENT_PASSWORD);
         }
 
@@ -142,14 +139,6 @@ public class StudentService {
                 .studentName(s.getStudentName())
                 .studentNumber(s.getStudentNumber())
                 .build();
-    }
-
-    @Transactional
-    public void registerStudent(List<StudentResponse> studentResponses) {
-        log.info("[학생 일괄 등록 요청] count={}", studentResponses.size());
-        List<Student> students = Student.from(studentResponses);
-        studentRepository.saveAll(students);
-        log.info("[학생 일괄 등록 완료] saved={}", students.size());
     }
 
     @Transactional

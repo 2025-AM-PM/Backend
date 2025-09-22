@@ -2,25 +2,32 @@ package AM.PM.Homepage.security;
 
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
-import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final StudentRepository userRepository;
 
-    public CustomUserDetailsService(StudentRepository userRepository) {
-
-        this.userRepository = userRepository;
-    }
-
     @Override
     public UserDetails loadUserByUsername(String studentNumber) throws UsernameNotFoundException {
-        Student userData = userRepository.findByStudentNumber(studentNumber).orElseThrow(() -> new UsernameNotFoundException("학생을 찾을 수 없음: " + studentNumber));
-        return new UserAuth(userData);
+        Student student = userRepository.findByStudentNumber(studentNumber)
+                .orElseThrow(() -> new UsernameNotFoundException("찾을 수 없는 유저" + studentNumber));
+
+        return new UserAuth(
+                student.getId(),
+                studentNumber,
+                student.getPassword(),
+                student.getStudentName(),
+                student.getRole()
+        );
     }
 }

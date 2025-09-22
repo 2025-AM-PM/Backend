@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginSuccessResponse {
 
-    private String studentNumber;
     private Long studentId;
-    private Integer studentTier;
+    private String studentNumber;
     private String studentName;
-
+    private String role;
+    private Integer studentTier;
 }
