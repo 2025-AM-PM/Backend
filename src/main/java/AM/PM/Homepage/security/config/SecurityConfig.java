@@ -1,5 +1,6 @@
 package AM.PM.Homepage.security.config;
 
+import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.student.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
@@ -33,6 +34,7 @@ public class SecurityConfig {
     private final RefreshTokenService refreshTokenService;
     private final CorsConfigurationSource corsConfigurationSource;
     private final LogoutHandlerImpl logoutHandler;
+    private final AlgorithmGradeRepository algorithmGradeRepository;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -47,8 +49,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public LoginSuccessHandler loginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService) {
-        return new LoginSuccessHandler(jwtUtil, refreshTokenService);
+    public LoginSuccessHandler loginSuccessHandler(JwtUtil jwtUtil, RefreshTokenService refreshTokenService, AlgorithmGradeRepository algorithmGradeRepository) {
+        return new LoginSuccessHandler(jwtUtil, refreshTokenService, algorithmGradeRepository);
     }
 
     @Bean
@@ -94,7 +96,7 @@ public class SecurityConfig {
         StudentLoginFilter studentLoginFilter = new StudentLoginFilter(
                 authenticationManager(authenticationConfiguration));
         studentLoginFilter.setFilterProcessesUrl("/api/student/login");
-        studentLoginFilter.setSuccessHandler(loginSuccessHandler(jwtUtil, refreshTokenService));
+        studentLoginFilter.setSuccessHandler(loginSuccessHandler(jwtUtil, refreshTokenService, algorithmGradeRepository));
         studentLoginFilter.setFailureHandler(loginFailureHandler());
 
         http

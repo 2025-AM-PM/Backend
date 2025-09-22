@@ -11,6 +11,8 @@ import AM.PM.Homepage.security.UserAuth;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,13 +53,7 @@ public class StudentController {
     @PostMapping("modify/password")
     public ResponseEntity<Void> changePassword(@RequestBody PasswordChangeRequest passwordChangeRequest,
                                                @AuthenticationPrincipal UserAuth userAuth) {
-
-        if (!studentService.checkPasswordMatch(userAuth.getPassword(), passwordChangeRequest)) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        studentService.changeStudentPassword(userAuth.getId(), passwordChangeRequest.getNewPassword());
-
+        studentService.changeStudentPassword(userAuth.getId(), passwordChangeRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -77,14 +73,11 @@ public class StudentController {
     public ResponseEntity<StudentInformationResponse> showStudentInformation(
             @RequestBody VerificationCodeRequest verificationCodeRequest,
             @AuthenticationPrincipal UserAuth userAuth) {
-
-        if (studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
+        if (!studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
             return ResponseEntity.badRequest().build();
         }
-        ;
-
         StudentInformationResponse studentInformationResponse
-                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), userAuth.getUsername());
+                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(), verificationCodeRequest.getSolvedAcNickname());
 
         return ResponseEntity.ok(studentInformationResponse);
     }

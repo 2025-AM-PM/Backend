@@ -1,6 +1,8 @@
 package AM.PM.Homepage.cafeteria.service;
 
 import AM.PM.Homepage.cafeteria.response.CafeteriaResponse;
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -46,14 +48,14 @@ public class CafeteriaService {
         Elements sections = doc.select(".contentsArea.WeekMenu .section");
 
         if (sections.isEmpty()) {
-            throw new IOException("메인 콘텐츠('.section')를 찾을 수 없습니다. 웹 페이지 구조가 변경되었을 수 있습니다.");
+            throw new CustomException(ErrorCode.FAIL_PARSE_SECTION);
         }
 
         String dateInfo = sections.first().select(".ttArea .info").text();
         List<LocalDate> weekDates = parseDateRange(dateInfo);
 
         if (weekDates.isEmpty()) {
-            throw new IOException("유효한 주중 날짜를 파싱할 수 없습니다: " + dateInfo);
+            throw new CustomException(ErrorCode.FAIL_PARSE_WEEK_DATES);
         }
 
         for (Element section : sections) {
