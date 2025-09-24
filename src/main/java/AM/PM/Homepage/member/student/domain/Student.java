@@ -85,4 +85,8 @@ public class Student {
     public String issuedVerificationToken() {
         return UUID.randomUUID().toString();
     }
+
+    public void changeRole(StudentRole role) {
+        this.role = role;
+    }
 }

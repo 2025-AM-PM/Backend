@@ -27,14 +27,15 @@ public enum ErrorCode {
 
     // 403 Forbidden
     FORBIDDEN_NOT_STAFF("4031", "관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
-    FORBIDDEN_NOT_ADMIN("4042", "어드민(회장/부회장/시스템 관리자) 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
-    FORBIDDEN_NOT_SYSTEM_ADMIN("4043", "시스템 관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_ADMIN("4032", "어드민(회장/부회장/시스템 관리자) 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_SYSTEM_ADMIN("4033", "시스템 관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_POLL_CLOSE("4034", "투표 생성자만 마감할 수 있습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_POLL_DELETE("4035", "투표 생성자만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_GROUP_LEADER_ONLY("4036", "스터디 그룹 리더만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_NOT_OWNER("4037", "본인만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
-    UNAUTHORIZED_EXHIBIT("4038", "exhibit 접근 권한 없음", HttpStatus.UNAUTHORIZED),
-    UNAUTHORIZED_("4039", "poll 접근 권한 없음", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED_EXHIBIT("4038", "exhibit 접근 권한 없음", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED_("4039", "poll 접근 권한 없음", HttpStatus.FORBIDDEN),
+    FORBIDDEN_CHANGE_ROLE("40331", "권한을 바꿀 수 없음", HttpStatus.FORBIDDEN),
 
     // 404 Not Found
     NOT_FOUND_STUDENT("4041", "student 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),

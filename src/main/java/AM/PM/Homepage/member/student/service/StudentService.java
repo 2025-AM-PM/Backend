@@ -1,9 +1,15 @@
 package AM.PM.Homepage.member.student.service;
 
+import AM.PM.Homepage.admin.request.SignupApprovalRequest;
+import AM.PM.Homepage.admin.request.StudentRoleUpdateRequest;
+import AM.PM.Homepage.admin.response.AllStudentDetailResponse;
+import AM.PM.Homepage.admin.response.SignupApprovalResponse;
+import AM.PM.Homepage.admin.response.StudentDetailResponse;
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
@@ -14,15 +20,18 @@ import AM.PM.Homepage.member.student.response.StudentInformationResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
 @Slf4j
+@Service
+@Transactional
+@RequiredArgsConstructor
 public class StudentService {
 
     private final StudentRepository studentRepository;
@@ -48,7 +57,6 @@ public class StudentService {
         return student.getId();
     }
 
-    @Transactional
     public void changeStudentPassword(Long studentId, PasswordChangeRequest request) {
         log.info("[비밀번호 변경 요청] studentId={}", studentId);
 
@@ -103,7 +111,6 @@ public class StudentService {
                 .build();
     }
 
-    @Transactional
     public StudentInformationResponse linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
         log.info("[솔브드 연동 요청] studentId={}, nickname={}", studentId, solvedAcNickname);
 
@@ -145,15 +152,58 @@ public class StudentService {
                 .build();
     }
 
-    @Transactional
-    public void deleteStudent(Long id) {
-        log.info("[학생 삭제 요청] studentId={}", id);
-        studentRepository.delete(findByStudentId(id));
-        log.info("[학생 삭제 완료] studentId={}", id);
+    @PreAuthorize("@authz.isAdmin(authentication)")
+    public void deleteStudent(Long studentId) {
+        log.info("[학생 삭제 요청] studentId={}", studentId);
+        studentRepository.deleteById(studentId);
+        log.info("[학생 삭제 완료] studentId={}", studentId);
     }
 
     private Student findByStudentId(Long id) {
         return studentRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
+    }
+
+    // 전체 학생 상세정보 보기 (임원급 이상)
+    @PreAuthorize("@authz.isStaff(authentication)")
+    public AllStudentDetailResponse getAllStudentDetails() {
+        log.info("[전체 학생 정보 요청]");
+        return studentRepository.getAllStudentDetailResponse();
+    }
+
+
+    // 회원가입 신청 수락 (회장단, 관리자)
+    @PreAuthorize("@authz.isAdmin(authentication)")
+    public SignupApprovalResponse approveSignup(SignupApprovalRequest request) {
+        // TODO : 회원가입 application으로 전환
+        return null;
+    }
+
+    // 권한 수정 (회장단 이상만, 관리자 권한 수정 불가 )
+    @PreAuthorize("@authz.isAdmin(authentication)")
+    public StudentDetailResponse updateRole(StudentRoleUpdateRequest request, Long studentId) {
+        log.info("[학생 권한 수정 요청] studentId={}, newRole={}", studentId, request.getNewRole());
+        Optional<Student> studentOpt = studentRepository.findByIdWithAlgorithmProfile(studentId);
+        if (studentOpt.isEmpty()) {
+            throw new CustomException(ErrorCode.NOT_FOUND_STUDENT);
+        }
+        Student student = studentOpt.get();
+        if (student.getRole() == StudentRole.SYSTEM_ADMIN) {
+            throw new CustomException(ErrorCode.FORBIDDEN_CHANGE_ROLE, "시스템 관리자의 역할은 수정할 수 없습니다.");
+        }
+        student.changeRole(request.getNewRole());
+        AlgorithmProfile profile = student.getBaekjoonTier();
+
+        log.info("[학생 권한 수정 완료] studentId={}, newRole={}", studentId, request.getNewRole());
+        return new StudentDetailResponse(
+                student.getId(),
+                student.getStudentNumber(),
+                student.getStudentName(),
+                student.getRole(),
+                profile != null ? profile.getId() : null,
+                profile != null ? profile.getTier() : null,
+                profile != null ? profile.getSolvedCount() : null,
+                profile != null ? profile.getRating() : null
+        );
     }
 }
