@@ -1,6 +1,7 @@
 package AM.PM.Homepage.member.student.domain;
 
 import AM.PM.Homepage.exhibit.entity.Exhibit;
+import AM.PM.Homepage.member.algorithmprofile.domain.AlgorithmProfile;
 import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
 import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
 import jakarta.persistence.CascadeType;

@@ -27,20 +27,20 @@ public class StudyGroupApplication extends BaseEntity {
     private Student student;
 
     @Enumerated(EnumType.STRING)
-    private ApplicationStatus status;
+    private StudyGroupApplicationStatus status;
 
     @Builder
-    protected StudyGroupApplication(StudyGroup studyGroup, Student student, ApplicationStatus status) {
+    protected StudyGroupApplication(StudyGroup studyGroup, Student student, StudyGroupApplicationStatus status) {
         this.studyGroup = studyGroup;
         this.student = student;
         this.status = status;
     }
 
     public void approve(){
-        this.status = ApplicationStatus.APPROVED;
+        this.status = StudyGroupApplicationStatus.APPROVED;
     }
 
     public void reject() {
-        this.status = ApplicationStatus.REJECTED;
+        this.status = StudyGroupApplicationStatus.REJECTED;
     }
 }

@@ -1,9 +1,9 @@
 package AM.PM.Homepage.security.config;
 
 import AM.PM.Homepage.member.student.domain.StudentRole;
-import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
+import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
-import AM.PM.Homepage.member.student.service.RefreshTokenService;
+import AM.PM.Homepage.member.refreshtoken.service.RefreshTokenService;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;

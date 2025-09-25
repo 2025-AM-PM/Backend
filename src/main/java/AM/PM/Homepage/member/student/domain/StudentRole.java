@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 public enum StudentRole {
 
     USER,               // 일반
-    MANAGER,            // 동아리 임원
+    STAFF,              // 동아리 임원
     PRESIDENT,          // 회장, 부회장
     SYSTEM_ADMIN;       // 시스템 관리자
 
@@ -15,7 +15,7 @@ public enum StudentRole {
     }
 
     public boolean isStaff() {
-        return this == MANAGER || this == PRESIDENT || this == SYSTEM_ADMIN;
+        return this == STAFF || this == PRESIDENT || this == SYSTEM_ADMIN;
     }
 
     public boolean isAdmin() {

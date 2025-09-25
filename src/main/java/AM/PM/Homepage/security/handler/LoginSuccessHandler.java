@@ -4,9 +4,9 @@ import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import AM.PM.Homepage.member.student.domain.StudentRole;
-import AM.PM.Homepage.member.student.repository.AlgorithmGradeRepository;
+import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
-import AM.PM.Homepage.member.student.service.RefreshTokenService;
+import AM.PM.Homepage.member.refreshtoken.service.RefreshTokenService;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;

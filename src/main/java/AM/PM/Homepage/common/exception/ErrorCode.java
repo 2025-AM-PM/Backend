@@ -26,6 +26,7 @@ public enum ErrorCode {
     INVALID_TOKEN("4015", "유효하지 않는 토큰", HttpStatus.UNAUTHORIZED),
 
     // 403 Forbidden
+    FORBIDDEN("4030", "허용되지 않은 요청", HttpStatus.FORBIDDEN),
     FORBIDDEN_NOT_STAFF("4031", "관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_NOT_ADMIN("4032", "어드민(회장/부회장/시스템 관리자) 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
     FORBIDDEN_NOT_SYSTEM_ADMIN("4033", "시스템 관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
@@ -43,7 +44,7 @@ public enum ErrorCode {
     NOT_FOUND_POLL("4043", "poll 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_NOTICE("4044", "notice 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_STUDY_GROUP("4045", "STUDY_GROUP 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
-    NOT_FOUND_APPLICATION("4046", "STUDY_GROUP 신청 정보를 찾을 수 없음", HttpStatus.NOT_FOUND),
+    NOT_FOUND_APPLICATION("4046", "APPLICATION 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_MEMBER("4047", "STUDY_GROUP 멤버를 찾을 수 없음", HttpStatus.NOT_FOUND),
 
     // 405 Method Not Allowed

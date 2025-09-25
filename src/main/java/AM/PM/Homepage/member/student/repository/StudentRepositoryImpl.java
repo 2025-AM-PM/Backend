@@ -1,13 +1,13 @@
 package AM.PM.Homepage.member.student.repository;
 
-import static AM.PM.Homepage.member.student.domain.QAlgorithmProfile.algorithmProfile;
+import static AM.PM.Homepage.member.algorithmprofile.domain.QAlgorithmProfile.algorithmProfile;
 import static AM.PM.Homepage.member.student.domain.QStudent.student;
 
-import AM.PM.Homepage.admin.response.AllStudentDetailResponse;
 import AM.PM.Homepage.member.student.domain.QStudent;
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.response.AllStudentDetailResponse;
 import AM.PM.Homepage.member.student.response.QStudentDetailResponse;
-import AM.PM.Homepage.admin.response.StudentDetailResponse;
+import AM.PM.Homepage.member.student.response.StudentDetailResponse;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +23,7 @@ public class StudentRepositoryImpl implements StudentRepositoryCustom {
     // 학생 정보 상세 조회
     @Override
     public AllStudentDetailResponse getAllStudentDetailResponse() {
+
         List<StudentDetailResponse> studentResponses = qf
                 .select(new QStudentDetailResponse(
                         student.id,

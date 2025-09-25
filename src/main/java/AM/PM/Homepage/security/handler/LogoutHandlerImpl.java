@@ -4,7 +4,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
+import AM.PM.Homepage.member.refreshtoken.repository.RefreshTokenRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.redis.RedisUtil;
 import jakarta.servlet.http.HttpServletRequest;

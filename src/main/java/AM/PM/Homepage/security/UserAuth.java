@@ -24,7 +24,6 @@ public class UserAuth implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.getAuthority()));
     }
 
-    // 비밀번호 사용 안 함
     @Override
     public String getPassword() {
         return encodedPassword;

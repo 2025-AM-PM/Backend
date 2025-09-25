@@ -1,0 +1,17 @@
+package AM.PM.Homepage.member.algorithmprofile.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class VerificationCodeResponse {
+
+    private String solvedAcNickname;
+    private String bio;
+
+}
