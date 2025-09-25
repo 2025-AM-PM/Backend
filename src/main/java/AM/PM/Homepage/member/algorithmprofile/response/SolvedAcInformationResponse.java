@@ -1,4 +1,4 @@
-package AM.PM.Homepage.member.student.response;
+package AM.PM.Homepage.member.algorithmprofile.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

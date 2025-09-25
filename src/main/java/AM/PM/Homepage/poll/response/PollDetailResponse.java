@@ -18,7 +18,6 @@ public class PollDetailResponse {
     private int maxSelect;
     private boolean multiple;
     private boolean anonymous;
-    private boolean allowAddOption;
     private boolean allowRevote;
     private PollResultVisibility resultVisibility;
     private LocalDateTime deadlineAt;
@@ -35,7 +34,7 @@ public class PollDetailResponse {
 
     @QueryProjection
     public PollDetailResponse(Long id, String title, String description, PollStatus status, int maxSelect,
-                              boolean multiple, boolean anonymous, boolean allowAddOption, boolean allowRevote,
+                              boolean multiple, boolean anonymous, boolean allowRevote,
                               PollResultVisibility resultVisibility, LocalDateTime deadlineAt, Long createdBy,
                               LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime closedAt) {
         this.id = id;
@@ -45,7 +44,6 @@ public class PollDetailResponse {
         this.maxSelect = maxSelect;
         this.multiple = multiple;
         this.anonymous = anonymous;
-        this.allowAddOption = allowAddOption;
         this.allowRevote = allowRevote;
         this.resultVisibility = resultVisibility;
         this.deadlineAt = deadlineAt;

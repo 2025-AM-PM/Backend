@@ -1,5 +1,7 @@
 package AM.PM.Homepage.security.filter;
 
+import static org.springframework.util.StringUtils.hasText;
+
 import AM.PM.Homepage.member.student.request.AuthenticationRequest;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;
 import AM.PM.Homepage.security.handler.LoginSuccessHandler;
@@ -9,52 +11,61 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StreamUtils;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
 
-    private final AuthenticationManager authenticationManager;
-    private AuthenticationSuccessHandler successHandler;
-    private AuthenticationFailureHandler failureHandler;
-
-    public StudentLoginFilter(AuthenticationManager authenticationManager) {
-        super(authenticationManager);
-        this.authenticationManager = authenticationManager;
+    public StudentLoginFilter(
+            AuthenticationManager authenticationManager,
+            LoginSuccessHandler successHandler,
+            LoginFailureHandler failureHandler
+    ) {
+        super();
+        setFilterProcessesUrl("/api/student/login");
+        setAuthenticationManager(authenticationManager);
+        setAuthenticationSuccessHandler(successHandler);
+        setAuthenticationFailureHandler(failureHandler);
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationServiceException {
+        if (!"POST".equals(request.getMethod())) {
+            throw new AuthenticationServiceException("허용되지 않은 메서드");
+        }
 
         AuthenticationRequest login;
 
         try {
             login = parseLoginRequest(request);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AuthenticationServiceException("올바르지 않은 로그인 요청 방식");
         }
 
-        String username = login.getStudentNumber();
+        String studentNumber = login.getStudentNumber();
         String password = login.getStudentPassword();
 
-        UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
+        if (!hasText(studentNumber) || !hasText(password)) {
+            throw new AuthenticationServiceException("아이디 또는 비밀번호가 잘못됨");
+        }
 
+        var authRequest = UsernamePasswordAuthenticationToken.unauthenticated(studentNumber, password);
         setDetails(request, authRequest);
-        return authenticationManager.authenticate(authRequest);
+        return getAuthenticationManager().authenticate(authRequest);
     }
 
-    private static AuthenticationRequest parseLoginRequest(HttpServletRequest request) throws IOException {
+    private AuthenticationRequest parseLoginRequest(HttpServletRequest request) throws IOException {
         AuthenticationRequest login;
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -66,22 +77,15 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
     }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        this.successHandler.onAuthenticationSuccess(request, response, authResult);
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+                                            Authentication authResult) throws IOException, ServletException {
+        getSuccessHandler().onAuthenticationSuccess(request, response, authResult);
     }
 
     @Override
-    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
-        this.failureHandler.onAuthenticationFailure(request, response, failed);
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                              AuthenticationException failed) throws IOException, ServletException {
+        getFailureHandler().onAuthenticationFailure(request, response, failed);
     }
-
-    public void setSuccessHandler(LoginSuccessHandler successHandler) {
-        this.successHandler = successHandler;
-    }
-
-    public void setFailureHandler(LoginFailureHandler failureHandler) {
-        this.failureHandler = failureHandler;
-    }
-
 }
 

@@ -29,8 +29,6 @@ public class PollCreateRequest {
 
     private boolean anonymous;
 
-    private boolean allowAddOption;
-
     private boolean allowRevote = true;
 
     private PollResultVisibility resultVisibility;

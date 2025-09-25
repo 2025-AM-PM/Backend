@@ -1,22 +1,27 @@
 package AM.PM.Homepage.member.student.response;
 
+import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.domain.StudentRole;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@NoArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class StudentResponse {
 
+    private Long id;
     private String studentNumber;
-    private String phoneNumber;
     private String studentName;
+    private StudentRole role;
 
-    @Builder
-    public StudentResponse(String studentNumber, String phoneNumber, String studentName) {
-        this.studentNumber = studentNumber;
-        this.phoneNumber = phoneNumber;
-        this.studentName = studentName;
+    public static StudentResponse from(Student student) {
+        return new StudentResponse(
+                student.getId(),
+                student.getStudentNumber(),
+                student.getStudentName(),
+                student.getRole()
+        );
     }
 }

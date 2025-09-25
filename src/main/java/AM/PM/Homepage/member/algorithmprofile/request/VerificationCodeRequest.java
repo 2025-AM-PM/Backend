@@ -1,4 +1,4 @@
-package AM.PM.Homepage.member.student.request;
+package AM.PM.Homepage.member.algorithmprofile.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

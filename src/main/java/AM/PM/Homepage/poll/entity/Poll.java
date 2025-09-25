@@ -54,10 +54,6 @@ public class Poll extends BaseTimeEntity {
     @Column(name = "anonymous", nullable = false)
     private boolean anonymous;
 
-    // 투표 항목 추가 가능 여부
-    @Column(name = "allow_add_opt", nullable = false)
-    private boolean allowAddOption;
-
     // 재투표 가능 여부
     @Column(name = "allow_revote", nullable = false)
     private boolean allowRevote;
@@ -80,16 +76,15 @@ public class Poll extends BaseTimeEntity {
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<PollOption> options = new ArrayList<>();
 
-    private Poll(String title, String description, PollStatus status, int maxSelect,
-                 boolean multiple, boolean anonymous, boolean allowAddOption, boolean allowRevote,
-                 PollResultVisibility resultVisibility, LocalDateTime deadlineAt, Long createdBy) {
+    private Poll(String title, String description, PollStatus status, int maxSelect, boolean multiple,
+                 boolean anonymous, boolean allowRevote, PollResultVisibility resultVisibility,
+                 LocalDateTime deadlineAt, Long createdBy) {
         this.title = title;
         this.description = description;
         this.status = status;
         this.maxSelect = maxSelect;
         this.multiple = multiple;
         this.anonymous = anonymous;
-        this.allowAddOption = allowAddOption;
         this.allowRevote = allowRevote;
         this.resultVisibility = resultVisibility;
         this.deadlineAt = deadlineAt;
@@ -104,7 +99,6 @@ public class Poll extends BaseTimeEntity {
                 request.getMaxSelect(),
                 request.isMultiple(),
                 request.isAnonymous(),
-                request.isAllowAddOption(),
                 request.isAllowRevote(),
                 request.getResultVisibility(),
                 request.getDeadlineAt(),

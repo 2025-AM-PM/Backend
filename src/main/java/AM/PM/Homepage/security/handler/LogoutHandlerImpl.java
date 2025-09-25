@@ -1,48 +1,38 @@
 package AM.PM.Homepage.security.handler;
 
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
-import AM.PM.Homepage.member.student.repository.StudentRepository;
-import AM.PM.Homepage.security.UserAuth;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
+import AM.PM.Homepage.member.refreshtoken.repository.RefreshTokenRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.redis.RedisUtil;
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
 
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-
 @Component
+@RequiredArgsConstructor
 public class LogoutHandlerImpl implements LogoutHandler {
 
-    private final RefreshTokenRepository repository;
+    private final RefreshTokenRepository tokenRepository;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
 
-    public LogoutHandlerImpl(RefreshTokenRepository repository, JwtUtil jwtUtil, RedisUtil redisUtil) {
-        this.repository = repository;
-        this.jwtUtil = jwtUtil;
-        this.redisUtil = redisUtil;
-    }
-
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        String refreshToken = request.getHeader(AUTHORIZATION);
 
-        String bearer = request.getHeader(AUTHORIZATION);
-
-        if(jwtUtil.validateToken(bearer)) {
-            throw new RuntimeException();
+        if(jwtUtil.validateToken(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        UserAuth principal = (UserAuth) authentication.getPrincipal();
-        repository.deleteById(principal.getId());
+        tokenRepository.deleteByRefreshToken(refreshToken);
 
-        Long expiration = jwtUtil.getExpiration(bearer);
-        redisUtil.setBlackList(bearer, "access", expiration);
+        Long expiration = jwtUtil.getExpiration(refreshToken);
+        redisUtil.setBlackList(refreshToken, "access", expiration);
     }
-
-
-
 }

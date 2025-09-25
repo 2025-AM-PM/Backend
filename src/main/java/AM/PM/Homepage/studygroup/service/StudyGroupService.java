@@ -4,7 +4,7 @@ import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
-import AM.PM.Homepage.studygroup.entity.ApplicationStatus;
+import AM.PM.Homepage.studygroup.entity.StudyGroupApplicationStatus;
 import AM.PM.Homepage.studygroup.entity.StudyGroup;
 import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
 import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
@@ -161,7 +161,7 @@ public class StudyGroupService {
         StudyGroupApplication application = StudyGroupApplication.builder()
                 .student(applicant)
                 .studyGroup(studyGroup)
-                .status(ApplicationStatus.PENDING)
+                .status(StudyGroupApplicationStatus.PENDING)
                 .build();
 
         applicationRepository.save(application);
@@ -184,7 +184,7 @@ public class StudyGroupService {
             throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        if (application.getStatus() != ApplicationStatus.PENDING) {
+        if (application.getStatus() != StudyGroupApplicationStatus.PENDING) {
             log.warn("[승인 실패] 이미 처리된 신청: applicationId={}, status={}", applicationId, application.getStatus());
             throw new CustomException(ErrorCode.ALREADY_PROCESSED_APPLICATION);
         }
@@ -216,7 +216,7 @@ public class StudyGroupService {
             throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        if (application.getStatus() != ApplicationStatus.PENDING) {
+        if (application.getStatus() != StudyGroupApplicationStatus.PENDING) {
             log.warn("[거절 실패] 이미 처리된 신청: applicationId={}, status={}", applicationId, application.getStatus());
             throw new CustomException(ErrorCode.ALREADY_PROCESSED_APPLICATION);
         }

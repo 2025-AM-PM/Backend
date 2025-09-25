@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     // 400 Bad Request
+    BAD_REQUEST("4000", "잘못된 요청", HttpStatus.BAD_REQUEST),
     INVALID_POLL_NO_SELECTION("4001", "선택 항목이 없습니다.", HttpStatus.BAD_REQUEST),
     INVALID_POLL_SINGLE_SELECTION("4002", "단일 선택 투표에서는 1개만 선택할 수 있습니다.", HttpStatus.BAD_REQUEST),
     INVALID_POLL_MAX_SELECTION("4003", "최대 선택 수를 초과했습니다.", HttpStatus.BAD_REQUEST),
@@ -19,16 +20,23 @@ public enum ErrorCode {
     // 401 Unauthorized
     UNAUTHORIZED("4010", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),
     INVALID_CURRENT_PASSWORD("4011", "현재 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
-    UNAUTHORIZED_EXHIBIT("4012", "exhibit 접근 권한 없음", HttpStatus.UNAUTHORIZED),
-    REFRESH_TOKEN_REQUIRED("4013", "리프레시 토큰이 없습니다.", HttpStatus.UNAUTHORIZED),
-    REFRESH_TOKEN_EXPIRED("4014", "리프레시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
-    INVALID_TOKEN_CATEGORY("4015", "토큰의 종류가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_REQUIRED("4012", "리프레시 토큰이 없습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_EXPIRED("4013", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_TOKEN_CATEGORY("4014", "토큰의 종류가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_TOKEN("4015", "유효하지 않는 토큰", HttpStatus.UNAUTHORIZED),
 
     // 403 Forbidden
-    FORBIDDEN_POLL_CLOSE("4031", "투표 생성자만 마감할 수 있습니다.", HttpStatus.FORBIDDEN),
-    FORBIDDEN_POLL_DELETE("4032", "투표 생성자만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
-    FORBIDDEN_GROUP_LEADER_ONLY("4033", "스터디 그룹 리더만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
-    FORBIDDEN_NOT_OWNER("4034", "본인만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN("4030", "허용되지 않은 요청", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_STAFF("4031", "관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_ADMIN("4032", "어드민(회장/부회장/시스템 관리자) 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_SYSTEM_ADMIN("4033", "시스템 관리자 외 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_POLL_CLOSE("4034", "투표 생성자만 마감할 수 있습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_POLL_DELETE("4035", "투표 생성자만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_GROUP_LEADER_ONLY("4036", "스터디 그룹 리더만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
+    FORBIDDEN_NOT_OWNER("4037", "본인만 수행할 수 있습니다.", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED_EXHIBIT("4038", "exhibit 접근 권한 없음", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED_("4039", "poll 접근 권한 없음", HttpStatus.FORBIDDEN),
+    FORBIDDEN_CHANGE_ROLE("40331", "권한을 바꿀 수 없음", HttpStatus.FORBIDDEN),
 
     // 404 Not Found
     NOT_FOUND_STUDENT("4041", "student 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
@@ -36,8 +44,11 @@ public enum ErrorCode {
     NOT_FOUND_POLL("4043", "poll 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_NOTICE("4044", "notice 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_STUDY_GROUP("4045", "STUDY_GROUP 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
-    NOT_FOUND_APPLICATION("4046", "STUDY_GROUP 신청 정보를 찾을 수 없음", HttpStatus.NOT_FOUND),
+    NOT_FOUND_APPLICATION("4046", "APPLICATION 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_MEMBER("4047", "STUDY_GROUP 멤버를 찾을 수 없음", HttpStatus.NOT_FOUND),
+
+    // 405 Method Not Allowed
+    NOT_ALLOWED_METHOD("4050", "잘못된 요청 메서드", HttpStatus.METHOD_NOT_ALLOWED),
 
     // 409 Conflict
     DUPLICATE_STUDENT_NUMBER("4090", "이미 가입된 학번입니다.", HttpStatus.CONFLICT),

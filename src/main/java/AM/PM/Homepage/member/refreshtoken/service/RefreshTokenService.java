@@ -1,11 +1,12 @@
-package AM.PM.Homepage.member.student.service;
+package AM.PM.Homepage.member.refreshtoken.service;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
-import AM.PM.Homepage.member.student.domain.RefreshToken;
-import AM.PM.Homepage.member.student.repository.RefreshTokenRepository;
+import AM.PM.Homepage.member.refreshtoken.domain.RefreshToken;
+import AM.PM.Homepage.member.student.domain.StudentRole;
+import AM.PM.Homepage.member.refreshtoken.repository.RefreshTokenRepository;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
@@ -37,7 +38,6 @@ public class RefreshTokenService {
         log.info("[액세스 토큰 재발급 요청] studentId={}", studentId);
 
         if (!studentRepository.existsById(studentId)) {
-            log.warn("[재발급 실패] 학생 없음: studentId={}", studentId);
             throw new CustomException(ErrorCode.NOT_FOUND_STUDENT);
         }
 
@@ -45,12 +45,12 @@ public class RefreshTokenService {
         validateRefreshToken(refreshToken);
 
         String username = jwtUtil.getUsername(refreshToken);
-        String role = jwtUtil.getRole(refreshToken);
+        StudentRole role = jwtUtil.getRole(refreshToken);
 
         String newAccessToken = jwtUtil.generateAccessToken(studentId, username, role);
         String newRefreshToken = jwtUtil.generateRefreshToken(studentId, username, role);
 
-        deleteRefreshToken(refreshToken);
+        refreshTokenRepository.deleteByRefreshToken(refreshToken);
         registerRefreshToken(newRefreshToken);
         setResponseHeaders(response, newAccessToken, newRefreshToken);
 
@@ -59,20 +59,17 @@ public class RefreshTokenService {
 
     private String extractRefreshToken(Cookie[] cookies) {
         if (cookies == null || cookies.length == 0) {
-            log.warn("[재발급 실패] 리프레시 쿠키 없음");
             throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
         }
         for (Cookie cookie : cookies) {
             if (REFRESH.equals(cookie.getName())) {
                 String token = cookie.getValue();
                 if (token == null || token.isBlank()) {
-                    log.warn("[재발급 실패] 리프레시 토큰 비어있음");
                     throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
                 }
                 return token;
             }
         }
-        log.warn("[재발급 실패] 리프레시 쿠키 미존재");
         throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
     }
 
@@ -80,13 +77,11 @@ public class RefreshTokenService {
         try {
             jwtUtil.isExpired(refreshToken);
         } catch (ExpiredJwtException e) {
-            log.warn("[재발급 실패] 리프레시 토큰 만료");
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+            throw new CustomException(ErrorCode.TOKEN_EXPIRED);
         }
 
         String category = jwtUtil.getCategory(refreshToken);
         if (!REFRESH.equals(category)) {
-            log.warn("[재발급 실패] 잘못된 토큰 카테고리: {}", category);
             throw new CustomException(ErrorCode.INVALID_TOKEN_CATEGORY);
         }
     }
@@ -94,10 +89,6 @@ public class RefreshTokenService {
     private void setResponseHeaders(HttpServletResponse response, String newAccessToken, String newRefreshToken) {
         response.setHeader(AUTHORIZATION, newAccessToken);
         response.addCookie(provider.createCookie(REFRESH, newRefreshToken));
-    }
-
-    private void deleteRefreshToken(String refreshToken) {
-        refreshTokenRepository.deleteRefreshTokenByRefreshToken(refreshToken);
     }
 
     public void registerRefreshToken(String newRefreshToken) {

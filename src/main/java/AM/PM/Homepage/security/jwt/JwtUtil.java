@@ -1,6 +1,10 @@
 package AM.PM.Homepage.security.jwt;
 
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.domain.StudentRole;
+import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import AM.PM.Homepage.util.redis.RedisUtil;
@@ -33,41 +37,51 @@ public class JwtUtil {
     private final static String JWT_PAYLOAD_USERNAME = "username";
     private final static String JWT_PAYLOAD_ROLE = "role";
     private final static String JWT_PAYLOAD_ID = "id";
+    private final StudentRepository studentRepository;
 
-    public JwtUtil(@Value("${spring.jwt.secret}") String secretKey, RedisUtil redisUtil) {
-        this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
+    public JwtUtil(@Value("${spring.jwt.secret}") String secretKey, RedisUtil redisUtil,
+                   StudentRepository studentRepository) {
+        this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8),
+                Jwts.SIG.HS256.key().build().getAlgorithm());
         this.redisUtil = redisUtil;
+        this.studentRepository = studentRepository;
     }
 
     public String getUsername(String token) {
 
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_USERNAME, String.class);
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+                .get(JWT_PAYLOAD_USERNAME, String.class);
     }
 
-    public String getRole(String token) {
-
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_ROLE, String.class);
+    public StudentRole getRole(String token) {
+        String roleName = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+                .get(JWT_PAYLOAD_ROLE, String.class);
+        return StudentRole.valueOf(roleName);
     }
 
     public String getCategory(String token) {
 
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_CATEGORY, String.class);
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+                .get(JWT_PAYLOAD_CATEGORY, String.class);
     }
 
     public Long getId(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get(JWT_PAYLOAD_ID, Long.class);
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+                .get(JWT_PAYLOAD_ID, Long.class);
     }
 
     public void isExpired(String token) {
         Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration();
     }
 
-    public String generateRefreshToken(Long id, String username, String role) {
-        return generateToken(id, REFRESH_TOKEN.getValue(), username, role, JwtTokenExpirationTime.refreshExpirationHours);
+    public String generateRefreshToken(Long studentId, String username, StudentRole role) {
+        return generateToken(studentId, REFRESH_TOKEN.getValue(), username, role,
+                JwtTokenExpirationTime.refreshExpirationHours);
     }
 
-    public String generateAccessToken(Long id, String username, String role) {
-        return generateToken(id, ACCESS_TOKEN.getValue(), username, role, JwtTokenExpirationTime.accessExpirationMinutes);
+    public String generateAccessToken(Long studentId, String username, StudentRole role) {
+        return generateToken(studentId, ACCESS_TOKEN.getValue(), username, role,
+                JwtTokenExpirationTime.accessExpirationMinutes);
     }
 
     public Authentication getAuthentication(String token) {
@@ -77,20 +91,22 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        String role = claims.get(JWT_PAYLOAD_ROLE, String.class);
+        StudentRole role = claims.get(JWT_PAYLOAD_ROLE, StudentRole.class);
         Collection<? extends GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority(role));
+                Collections.singletonList(new SimpleGrantedAuthority(role.getAuthority()));
 
         Long id = claims.get(JWT_PAYLOAD_ID, Long.class);
-        String username = claims.get(JWT_PAYLOAD_USERNAME, String.class);
 
-        Student student = Student.builder()
-                .id(id)
-                .studentNumber(username)
-                .studentRole(role)
-                .build();
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
-        UserAuth principal = new UserAuth(student);
+        UserAuth principal = new UserAuth(
+                student.getId(),
+                student.getStudentNumber(),
+                student.getPassword(),
+                student.getStudentName(),
+                student.getRole()
+        );
 
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
@@ -118,18 +134,17 @@ public class JwtUtil {
         }
     }
 
-    private String generateToken(Long id, String category, String username, String role, long expirationTime) {
+    private String generateToken(Long studentId, String category, String username, StudentRole role, long expirationTime) {
 
         return Jwts.builder()
-                .subject(id.toString())
+                .subject(studentId.toString())
                 .claim(JWT_PAYLOAD_CATEGORY, category)
                 .claim(JWT_PAYLOAD_USERNAME, username)
-                .claim(JWT_PAYLOAD_ROLE, role)
-                .claim(JWT_PAYLOAD_ID, id)
+                .claim(JWT_PAYLOAD_ROLE, role.name())
+                .claim(JWT_PAYLOAD_ID, studentId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(secretKey)
                 .compact();
     }
-
 }

@@ -1,7 +1,14 @@
-package AM.PM.Homepage.member.student.domain;
+package AM.PM.Homepage.member.algorithmprofile.domain;
 
-import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
-import jakarta.persistence.*;
+import AM.PM.Homepage.member.algorithmprofile.response.SolvedAcInformationResponse;
+import AM.PM.Homepage.member.student.domain.Student;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

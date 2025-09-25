@@ -31,8 +31,6 @@ public class PollController {
 
     private final PollService pollService;
 
-    // TODO: 투표 기능 완성
-
     // 투표 검색
     @GetMapping
     public ResponseEntity<Page<PollSummaryResponse>> searchPoll(
@@ -86,20 +84,15 @@ public class PollController {
         return ResponseEntity.noContent().build();
     }
 
-    // 투표 항목 생성 (허용된 경우만)
-
     // 투표 강제 마감 (생성자만)
     @PostMapping("/{pollId}/close")
     public ResponseEntity<PollSummaryResponse> closePoll(
             @PathVariable Long pollId,
             @AuthenticationPrincipal UserAuth userAuth
     ) {
-        Long studentId = userAuth == null ? null : userAuth.getId();
-        PollSummaryResponse response = pollService.close(pollId, studentId);
+        PollSummaryResponse response = pollService.close(pollId, userAuth.getId());
         return ResponseEntity.ok(response);
     }
-
-    // 투표 내용 수정
 
     // 투표 삭제
     @DeleteMapping("/{pollId}")
