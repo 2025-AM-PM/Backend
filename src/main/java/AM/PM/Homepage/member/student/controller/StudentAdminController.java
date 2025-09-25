@@ -1,8 +1,8 @@
 package AM.PM.Homepage.member.student.controller;
 
 import AM.PM.Homepage.member.student.request.StudentRoleUpdateRequest;
-import AM.PM.Homepage.member.student.response.AllStudentDetailResponse;
-import AM.PM.Homepage.member.student.response.StudentDetailResponse;
+import AM.PM.Homepage.member.student.response.AllStudentResponse;
+import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.member.student.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,19 +25,19 @@ public class StudentAdminController {
     // 전체 유저 조회 (임원 이상만)
     @GetMapping
     @PreAuthorize("hasAnyRole('STAFF', 'PRESIDENT', 'SYSTEM_ADMIN')")
-    public ResponseEntity<AllStudentDetailResponse> getAllStudentDetails() {
-        AllStudentDetailResponse response = studentService.getAllStudentDetails();
+    public ResponseEntity<AllStudentResponse> getStudents() {
+        AllStudentResponse response = studentService.getStudents();
         return ResponseEntity.ok(response);
     }
 
     // 회원 권한 수정
     @PatchMapping("/{studentId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN')")
-    public ResponseEntity<StudentDetailResponse> updateStudentRole(
+    public ResponseEntity<StudentResponse> updateStudentRole(
             @RequestBody StudentRoleUpdateRequest request,
             @PathVariable Long studentId
     ) {
-        StudentDetailResponse response = studentService.updateRole(request, studentId);
+        StudentResponse response = studentService.updateRole(request, studentId);
         return ResponseEntity.ok(response);
     }
 
@@ -48,9 +48,4 @@ public class StudentAdminController {
         studentService.deleteStudent(studentId);
         return ResponseEntity.noContent().build();
     }
-
-    // 대시보드 관리
-    // 로그 조회
-    // 게시글, 투표, 공지 등 작성, 수정 삭제
-    
 }

@@ -6,8 +6,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AllStudentDetailResponse {
+public class AllStudentResponse {
 
-    private List<StudentDetailResponse> students;
+    private List<StudentResponse> students;
     private long totalCount;
 }

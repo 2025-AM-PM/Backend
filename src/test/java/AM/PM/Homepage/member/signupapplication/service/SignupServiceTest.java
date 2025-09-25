@@ -7,7 +7,7 @@ import AM.PM.Homepage.member.signupapplication.domain.SignupApplication;
 import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
 import AM.PM.Homepage.member.signupapplication.repository.SignupApplicationRepository;
 import AM.PM.Homepage.member.signupapplication.request.SignupApplicationRequest;
-import AM.PM.Homepage.member.signupapplication.response.SignupApplicationResponse;
+import AM.PM.Homepage.member.signupapplication.response.SignupApplicationProcessResponse;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class SignupServiceTest {
         SignupApplicationRequest req = new SignupApplicationRequest();
         req.setApplicationIds(List.of(application.getId()));
 
-        SignupApplicationResponse res = signupService.approveSignup(req);
+        SignupApplicationProcessResponse res = signupService.approveSignup(req);
 
         assertThat(res.getTotal()).isEqualTo(1L);
         assertThat(res.getStatus()).isEqualTo(SignupApplicationStatus.APPROVED);
@@ -70,7 +70,7 @@ class SignupServiceTest {
         SignupApplicationRequest req = new SignupApplicationRequest();
         req.setApplicationIds(List.of(application.getId()));
 
-        SignupApplicationResponse res = signupService.rejectSignup(req);
+        SignupApplicationProcessResponse res = signupService.rejectSignup(req);
 
         assertThat(res.getTotal()).isEqualTo(1L);
         assertThat(res.getStatus()).isEqualTo(SignupApplicationStatus.REJECTED);

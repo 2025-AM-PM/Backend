@@ -1,9 +1,9 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
-import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.refreshtoken.service.RefreshTokenService;
+import AM.PM.Homepage.member.student.domain.StudentRole;
+import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.filter.JwtFilter;
 import AM.PM.Homepage.security.filter.StudentLoginFilter;
 import AM.PM.Homepage.security.handler.LoginFailureHandler;
@@ -65,7 +65,8 @@ public class SecurityConfig {
 
     @Bean
     public StudentLoginFilter studentLoginFilter() throws Exception {
-        return new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(), loginFailureHandler());
+        return new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(),
+                loginFailureHandler());
     }
 
     @Bean
@@ -94,18 +95,13 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((auth) -> auth
                         .requestMatchers(
-                                "/**", // 임시로 전체 허용
-                                "/",
-                                "/login",
-                                "/join",
-                                "/api/reissue",
-                                "/health",
-                                "/static/**"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/temp" // 나중에 ADMIN 생기면 설정
-                        ).hasRole(StudentRole.SYSTEM_ADMIN.name())
-                        .anyRequest().authenticated());
+                                "/api/admin/**"
+                        ).hasAnyRole(
+                                StudentRole.STAFF.name(),
+                                StudentRole.PRESIDENT.name(),
+                                StudentRole.SYSTEM_ADMIN.name()
+                        )
+                        .anyRequest().permitAll());
 
         http
                 .addFilterAt(studentLoginFilter(), UsernamePasswordAuthenticationFilter.class);

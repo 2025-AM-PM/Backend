@@ -1,7 +1,6 @@
 package AM.PM.Homepage.member.signupapplication.domain;
 
 import AM.PM.Homepage.common.entity.BaseTimeEntity;
-import AM.PM.Homepage.member.student.domain.Student;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,7 +35,14 @@ public class SignupApplication extends BaseTimeEntity {
     private String studentPassword;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "application_status", nullable = false)
     private SignupApplicationStatus status = SignupApplicationStatus.PENDING;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
 
     @Builder
     private SignupApplication(String studentNumber, String studentName, String studentPassword) {
@@ -46,9 +53,11 @@ public class SignupApplication extends BaseTimeEntity {
 
     public void approve() {
         this.status = SignupApplicationStatus.APPROVED;
+        this.approvedAt = LocalDateTime.now();
     }
 
     public void reject() {
         this.status = SignupApplicationStatus.REJECTED;
+        this.rejectedAt = LocalDateTime.now();
     }
 }

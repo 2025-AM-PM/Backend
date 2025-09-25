@@ -1,6 +1,7 @@
 package AM.PM.Homepage.member.student.controller;
 
 import AM.PM.Homepage.member.algorithmprofile.request.VerificationCodeRequest;
+import AM.PM.Homepage.member.algorithmprofile.service.AlgorithmProfileService;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
 import AM.PM.Homepage.member.student.response.StudentInformationResponse;
@@ -20,10 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/student")
+@RequestMapping("/api/students")
 public class StudentController {
 
     private final StudentService studentService;
+    private final AlgorithmProfileService algorithmProfileService;
 
     @GetMapping("/mypage")
     public ResponseEntity<StudentResponse> showMyPage(@AuthenticationPrincipal UserAuth userAuth) {
@@ -44,7 +46,7 @@ public class StudentController {
 
     @PostMapping("/issue")
     public ResponseEntity<String> issueVerificationCode(@AuthenticationPrincipal UserAuth userAuth) {
-        String verificationCode = studentService.issueVerificationCode(userAuth.getId());
+        String verificationCode = algorithmProfileService.issueVerificationCode(userAuth.getId());
         return ResponseEntity.ok(verificationCode);
     }
 
@@ -52,11 +54,11 @@ public class StudentController {
     public ResponseEntity<StudentInformationResponse> showStudentInformation(
             @RequestBody VerificationCodeRequest verificationCodeRequest,
             @AuthenticationPrincipal UserAuth userAuth) {
-        if (!studentService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
+        if (!algorithmProfileService.verificationStudentCode(userAuth.getId(), verificationCodeRequest)) {
             return ResponseEntity.badRequest().build();
         }
         StudentInformationResponse studentInformationResponse
-                = studentService.linkAlgorithmProfileToStudent(userAuth.getId(),
+                = algorithmProfileService.linkAlgorithmProfileToStudent(userAuth.getId(),
                 verificationCodeRequest.getSolvedAcNickname());
 
         return ResponseEntity.ok(studentInformationResponse);
@@ -68,6 +70,6 @@ public class StudentController {
             @AuthenticationPrincipal UserAuth userAuth) {
 
         return ResponseEntity.ok(
-                studentService.showStudentInformationForTest(request.getSolvedAcNickname(), userAuth.getUsername()));
+                algorithmProfileService.showStudentInformationForTest(request.getSolvedAcNickname(), userAuth.getUsername()));
     }
 }

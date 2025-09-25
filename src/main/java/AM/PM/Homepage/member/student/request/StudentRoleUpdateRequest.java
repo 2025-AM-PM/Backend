@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class StudentRoleUpdateRequest {
 
-    private StudentRole newRole;
+    private StudentRole role;
 }

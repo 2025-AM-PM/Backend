@@ -6,6 +6,7 @@ import AM.PM.Homepage.member.signupapplication.domain.SignupApplication;
 import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
 import AM.PM.Homepage.member.signupapplication.repository.SignupApplicationRepository;
 import AM.PM.Homepage.member.signupapplication.request.SignupApplicationRequest;
+import AM.PM.Homepage.member.signupapplication.response.SignupApplicationProcessResponse;
 import AM.PM.Homepage.member.signupapplication.response.SignupApplicationResponse;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
@@ -47,9 +48,24 @@ public class SignupService {
         log.info("[학생 가입 신청 완료] studentId={}, studentNumber={}", application.getId(), application.getStudentNumber());
     }
 
+    // 회원가입 요청 전체 조회
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('STAFF', 'PRESIDENT', 'SYSTEM_ADMIN')")
+    public List<SignupApplicationResponse> getSignupApplications(SignupApplicationStatus status) {
+        List<SignupApplication> responses;
+        if(status == null) {
+            responses = applicationRepository.findAll();
+        } else {
+            responses = applicationRepository.findByStatus(status);
+        }
+        return responses.stream()
+                .map(SignupApplicationResponse::from)
+                .toList();
+    }
+
     // 회원가입 요청 일괄 승인
     @PreAuthorize("hasAnyRole('PRESIDENT', 'SYSTEM_ADMIN')")
-    public SignupApplicationResponse approveSignup(SignupApplicationRequest request) {
+    public SignupApplicationProcessResponse approveSignup(SignupApplicationRequest request) {
         log.info("[회원가입 요청 - 일괄 승인 요청] studentId={}, size={}",
                 request.getApplicationIds(), request.getApplicationIds().size());
 
@@ -71,12 +87,12 @@ public class SignupService {
         studentRepository.saveAll(students);
         log.info("[회원가입 요청 - 일괄 승인 성공] students size={}", students.size());
 
-        return new SignupApplicationResponse(students.size(), SignupApplicationStatus.APPROVED);
+        return new SignupApplicationProcessResponse(students.size(), SignupApplicationStatus.APPROVED);
     }
 
     // 회원가입 요청 일괄 거절
     @PreAuthorize("hasAnyRole('PRESIDENT', 'SYSTEM_ADMIN')")
-    public SignupApplicationResponse rejectSignup(SignupApplicationRequest request) {
+    public SignupApplicationProcessResponse rejectSignup(SignupApplicationRequest request) {
         log.info("[회원가입 요청 - 일괄 거절 요청] studentId={}, size={}",
                 request.getApplicationIds(), request.getApplicationIds().size());
 
@@ -89,6 +105,6 @@ public class SignupService {
         }
         log.info("[회원가입 요청 - 일괄 거절 성공] students size={}", applications.size());
 
-        return new SignupApplicationResponse(applications.size(), SignupApplicationStatus.REJECTED);
+        return new SignupApplicationProcessResponse(applications.size(), SignupApplicationStatus.REJECTED);
     }
 }
