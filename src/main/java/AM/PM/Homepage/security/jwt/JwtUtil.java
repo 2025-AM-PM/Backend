@@ -1,5 +1,8 @@
 package AM.PM.Homepage.security.jwt;
 
+import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
+import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
+
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
@@ -9,23 +12,21 @@ import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import AM.PM.Homepage.util.redis.RedisUtil;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import org.springframework.beans.factory.annotation.Value;
-
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
-
-import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
-import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 
 @Component
 public class JwtUtil {
@@ -125,16 +126,13 @@ public class JwtUtil {
         return expirationDate.getTime() - now.getTime();
     }
 
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
-            return !redisUtil.hasKeyBlackList(token);
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean validateToken(String token) throws JwtException {
+        Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+        return !redisUtil.hasKeyBlackList(token);
     }
 
-    private String generateToken(Long studentId, String category, String username, StudentRole role, long expirationTime) {
+    private String generateToken(Long studentId, String category, String username, StudentRole role,
+                                 long expirationTime) {
 
         return Jwts.builder()
                 .subject(studentId.toString())
