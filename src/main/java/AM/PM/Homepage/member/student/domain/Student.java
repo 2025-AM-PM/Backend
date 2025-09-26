@@ -16,8 +16,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import java.util.List;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,11 +27,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Builder
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "students")
 public class Student {
 
     @Id
@@ -66,7 +67,7 @@ public class Student {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyGroupApplication> studyGroupApplications;
 
-    private Student(String studentNumber, StudentRole role, String studentName, String password) {
+    public Student(String studentNumber, StudentRole role, String studentName, String password) {
         this.studentNumber = studentNumber;
         this.role = role;
         this.studentName = studentName;
