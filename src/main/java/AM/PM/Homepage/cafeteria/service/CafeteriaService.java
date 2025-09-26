@@ -31,9 +31,15 @@ public class CafeteriaService {
 
     public List<CafeteriaResponse> scrapeMenus() throws IOException {
         List<CafeteriaResponse> allMenus = new ArrayList<>();
+
         Document doc = Jsoup.connect(JBNU_COOP_URL)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                .referrer(JBNU_COOP_URL)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                .header("Accept-Encoding", "gzip, deflate, br")
                 .get();
+
         Elements sections = doc.select(".contentsArea.WeekMenu .section");
 
         if (sections.isEmpty()) {
