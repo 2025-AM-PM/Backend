@@ -34,7 +34,7 @@ public class SignupService {
     public void signup(StudentSignupRequest request) {
         log.info("[학생 가입 신청 요청] studentNumber={}, name={}", request.getStudentNumber(), request.getStudentName());
 
-        if(applicationRepository.existsByStudentNumber(request.getStudentNumber())) {
+        if(applicationRepository.existsByStudentNumber(request.getStudentNumber()) || studentRepository.existsByStudentNumber(request.getStudentNumber())) {
             throw new CustomException(ErrorCode.DUPLICATE_STUDENT_NUMBER, "이미 신청되거나 가입된 학번입니다. studentNumber=" + request.getStudentNumber());
         }
 
