@@ -5,6 +5,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.refreshtoken.repository.RefreshTokenRepository;
+import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.redis.RedisUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,15 +25,26 @@ public class LogoutHandlerImpl implements LogoutHandler {
 
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        String refreshToken = request.getHeader(AUTHORIZATION);
+        final String authHeader = request.getHeader(AUTHORIZATION);
+        final String accessToken;
 
-        if(jwtUtil.validateToken(refreshToken)) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return;
+        }
+        accessToken = authHeader.substring(7);
+
+        if(!jwtUtil.validateToken(accessToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        tokenRepository.deleteByRefreshToken(refreshToken);
+        UserAuth userAuth = (UserAuth) authentication.getPrincipal();
+        Long studentId = userAuth.getId();
 
-        Long expiration = jwtUtil.getExpiration(refreshToken);
-        redisUtil.setBlackList(refreshToken, "access", expiration);
+        tokenRepository.deleteById(studentId);
+
+        Long expiration = jwtUtil.getExpiration(accessToken);
+        if (expiration > 0) {
+            redisUtil.setBlackList(accessToken, "logout", expiration);
+        }
     }
 }
