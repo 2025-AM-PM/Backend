@@ -1,13 +1,10 @@
 package AM.PM.Homepage.cafeteria.service;
 
 import AM.PM.Homepage.cafeteria.response.CafeteriaResponse;
-import AM.PM.Homepage.common.exception.CustomException;
-import AM.PM.Homepage.common.exception.ErrorCode;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -21,41 +18,33 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * 전북대학교 생협 주간 식단표 웹 페이지를 크롤링하여 정제된 메뉴 데이터 리스트를 생성하는 클래스.
- * Spring Service 등에서 재사용 가능하도록 설계됨.
- */
 @Service
 public class CafeteriaService {
 
     private static final String JBNU_COOP_URL = "https://coopjbnu.kr/menu/week_menu.php";
     private static final int DELAY_TIME = 86400000;
-    /**
-     * 주간 식단표 페이지를 크롤링하여 모든 메뉴 정보를 List<MenuData> 형태로 반환한다.
-     * @return 정제된 MenuData 객체의 리스트
-     * @throws IOException 네트워크 문제나 웹 페이지 구조 변경 시 발생
-     */
 
     @Scheduled(fixedDelay = DELAY_TIME)
     public List<CafeteriaResponse> updateDailyCafeteriaMenus() throws IOException {
         return scrapeMenus();
     }
 
-
     public List<CafeteriaResponse> scrapeMenus() throws IOException {
         List<CafeteriaResponse> allMenus = new ArrayList<>();
-        Document doc = Jsoup.connect(JBNU_COOP_URL).get();
+        Document doc = Jsoup.connect(JBNU_COOP_URL)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                .get();
         Elements sections = doc.select(".contentsArea.WeekMenu .section");
 
         if (sections.isEmpty()) {
-            throw new CustomException(ErrorCode.FAIL_PARSE_SECTION);
+            throw new IOException("메인 콘텐츠('.section')를 찾을 수 없습니다. 웹 페이지 구조가 변경되었을 수 있습니다.");
         }
 
         String dateInfo = sections.first().select(".ttArea .info").text();
         List<LocalDate> weekDates = parseDateRange(dateInfo);
 
         if (weekDates.isEmpty()) {
-            throw new CustomException(ErrorCode.FAIL_PARSE_WEEK_DATES);
+            throw new IOException("유효한 주중 날짜를 파싱할 수 없습니다: " + dateInfo);
         }
 
         for (Element section : sections) {
@@ -87,8 +76,6 @@ public class CafeteriaService {
 
             String price = extractPrice(cornerAndPrice);
 
-
-
             Elements tds = row.select("td");
             for (int i = 0; i < tds.size() && i < weekDates.size(); i++) {
                 String menuItems = cleanCellText(tds.get(i));
@@ -116,10 +103,6 @@ public class CafeteriaService {
             if (isNextRowOmuriceSpecial && headers.isEmpty()) {
                 Elements specialCells = row.select("td");
 
-                // ## FIX START ##
-                // The special omurice row has a placeholder <td> at the beginning.
-                // Therefore, we must start iterating from the second cell (index 1)
-                // and map it to the first weekday (index 0).
                 int weekDayIndex = 0;
                 for (int j = 1; j < specialCells.size() && weekDayIndex < weekDates.size(); j++) {
                     String specialMenu = cleanCellText(specialCells.get(j));
@@ -128,7 +111,6 @@ public class CafeteriaService {
                     }
                     weekDayIndex++;
                 }
-                // ## FIX END ##
 
                 isNextRowOmuriceSpecial = false;
                 continue;
@@ -181,7 +163,7 @@ public class CafeteriaService {
     private List<CafeteriaResponse> splitMenuItems(String cafeteria, String mealType, String corner, LocalDate date, String rawText) {
         List<CafeteriaResponse> splitMenus = new ArrayList<>();
         Pattern pricePattern = Pattern.compile("(\\d{1,3}(,\\d{3})*|\\d{4,})$");
-        
+
         for (String item : rawText.split("/")) {
             String trimmedItem = item.trim();
             if (trimmedItem.isEmpty() || trimmedItem.contains("곱배기")) continue;
@@ -214,13 +196,11 @@ public class CafeteriaService {
                 .collect(Collectors.toList());
     }
 
-    // 수정 코드
     private String cleanCellText(Element cell) {
         String text = cell.html().replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("<[^>]*>", " ");
-        // 여러 개의 개행과 공백을 하나의 개행으로 압축
         return text.trim().replaceAll("(\\s*\\n\\s*)+", "\n");
     }
-    
+
     private String extractPrice(String text) {
         Pattern pattern = Pattern.compile("(\\d+,\\d{3}원|\\d{3}원)");
         Matcher matcher = pattern.matcher(text);
