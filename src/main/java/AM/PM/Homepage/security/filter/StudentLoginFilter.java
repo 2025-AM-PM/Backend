@@ -32,7 +32,7 @@ public class StudentLoginFilter extends UsernamePasswordAuthenticationFilter {
             LoginFailureHandler failureHandler
     ) {
         super();
-        setFilterProcessesUrl("/api/student/login");
+        setFilterProcessesUrl("/api/students/login");
         setAuthenticationManager(authenticationManager);
         setAuthenticationSuccessHandler(successHandler);
         setAuthenticationFailureHandler(failureHandler);
