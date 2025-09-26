@@ -34,8 +34,8 @@ public class SignupService {
     public void signup(StudentSignupRequest request) {
         log.info("[학생 가입 신청 요청] studentNumber={}, name={}", request.getStudentNumber(), request.getStudentName());
 
-        if (studentRepository.existsByStudentNumber(request.getStudentNumber())) {
-            throw new CustomException(ErrorCode.DUPLICATE_STUDENT_NUMBER);
+        if(applicationRepository.existsByStudentNumber(request.getStudentNumber())) {
+            throw new CustomException(ErrorCode.DUPLICATE_STUDENT_NUMBER, "이미 신청되거나 가입된 학번입니다. studentNumber=" + request.getStudentNumber());
         }
 
         SignupApplication application = SignupApplication.builder()
@@ -72,6 +72,7 @@ public class SignupService {
         List<Student> students = new ArrayList<>();
         List<SignupApplication> applications = applicationRepository.findByStatus(SignupApplicationStatus.PENDING);
         for (SignupApplication application : applications) {
+            // TODO: 버그 수정 필요. requestIds 안에 포함되어 있어야 하는게 아님
             if (!request.getApplicationIds().contains(application.getId())) {
                 throw new CustomException(ErrorCode.NOT_FOUND_APPLICATION, "applicationId=" + application.getId());
             }

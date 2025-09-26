@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SignupApplicationRepository extends JpaRepository<SignupApplication, Long> {
     List<SignupApplication> findByStatus(SignupApplicationStatus status);
+
+    boolean existsByStudentNumber(String studentNumber);
 }
