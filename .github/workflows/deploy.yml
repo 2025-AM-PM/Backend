@@ -198,8 +198,3 @@ jobs:
               --add-host=host.docker.internal:host-gateway \
               -p "${PORT}:8080" \
               "${APP}:latest"
-
-            echo "▶ Health check"
-            sleep 3
-            (which curl >/dev/null 2>&1 && curl -fsS "http://127.0.0.1:${PORT}/actuator/health" && echo) || true
-            docker logs --tail=80 "${APP}" || true
