@@ -1,114 +1,159 @@
-name: CI & CD
+name: minimal-ci-cd
 
 on:
   push:
-    branches: [main, test]
+    branches: [ main, test ]
 
 env:
   JAVA_VERSION: '21'
   TZ: 'Asia/Seoul'
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
-    env:
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      TZ: 'Asia/Seoul'
-
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Run tests with profile
+      - name: Build jar (skip tests)
+        run: ./gradlew clean bootJar -x test
+
+      - name: Pick environment
         run: |
           BRANCH="${GITHUB_REF##*/}"
-          if [[ "$BRANCH" == "main" ]]; then
-            ./gradlew test -Dspring.profiles.active=main
+          if [ "$BRANCH" = "main" ]; then
+            {
+              echo "APP=ampm-backend-main"
+              echo "PROFILE=main"
+              echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"
+              echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"
+              echo "USER=${{ secrets.MAIN_BACKEND_SSH_USER }}"
+              echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"
+              echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"
+              echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"
+              echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
+              echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
+              echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
+              echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
+              echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
+              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
+            } >> $GITHUB_ENV
           else
-            ./gradlew test -Dspring.profiles.active=test
+            {
+              echo "APP=ampm-backend-test"
+              echo "PROFILE=test"
+              echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"
+              echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"
+              echo "USER=${{ secrets.TEST_BACKEND_SSH_USER }}"
+              echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"
+              echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"
+              echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"
+              echo "DB_URL=${{ secrets.TEST_DB_URL }}"
+              echo "DB_USER=${{ secrets.TEST_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
+              echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
+              echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
+              echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
+              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
+            } >> $GITHUB_ENV
           fi
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Build bootJar
-        run: ./gradlew bootJar -x test
-
-      - name: Prepare artifact
-        run: |
+          {
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+          } >> $GITHUB_ENV
+          # export jar to root
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
-          [ -z "$JAR" ] && { echo "❌ jar not found"; exit 1; }
           cp "$JAR" app.jar
 
-      - name: Set deploy env vars
-        run: |
-          BRANCH="${GITHUB_REF##*/}"
-
-          if [[ "$BRANCH" == "main" ]]; then
-            echo "HOST=${{ secrets.OCI_HOST }}" >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_USER }}" >> $GITHUB_ENV
-            echo "APP=spring-main"             >> $GITHUB_ENV
-            echo "PROFILE=main"                >> $GITHUB_ENV
-            echo "DB_USERNAME=${{ secrets.DB_USERNAME_MAIN }}" >> $GITHUB_ENV
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD_MAIN }}" >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                >> $GITHUB_ENV
-            echo "${{ secrets.OCI_SSH_KEY }}"  >> $GITHUB_ENV
-            echo "EOF"                         >> $GITHUB_ENV
-          else
-            echo "HOST=${{ secrets.OCI_TEST_HOST }}" >> $GITHUB_ENV
-            echo "USER=${{ secrets.OCI_TEST_USER }}" >> $GITHUB_ENV
-            echo "APP=spring-test"                  >> $GITHUB_ENV
-            echo "PROFILE=test"                     >> $GITHUB_ENV
-            echo "DB_USERNAME=" >> $GITHUB_ENV
-            echo "DB_PASSWORD=" >> $GITHUB_ENV
-            echo "SSH_KEY<<EOF"                     >> $GITHUB_ENV
-            echo "${{ secrets.OCI_TEST_SSH_KEY }}"  >> $GITHUB_ENV
-            echo "EOF"                              >> $GITHUB_ENV
-          fi
-
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
-
-      - name: Copy artifacts to server
-        uses: appleboy/scp-action@v0.1.4
+      - name: Make remote dir
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
-          key: ${{ env.SSH_KEY }}
+          password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
+          script: mkdir -p "${{ env.DIR }}"
+
+      - name: Copy app.jar & Dockerfile
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USER }}
+          password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
           source: "app.jar,Dockerfile"
-          target: /home/${{ env.USER }}/app/
+          target: "${{ env.DIR }}/"
 
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1
+      - name: Deploy (build & run)
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
-          key: ${{ env.SSH_KEY }}
-          envs: APP,PROFILE,DB_USERNAME,DB_PASSWORD,JWT_SECRET
+          password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
           script: |
-            set -euo pipefail
-            cd ~/app
+            set -e
+            cd "${{ env.DIR }}"
 
-            docker stop "$APP" || true
-            docker rm "$APP" || true
+            if [ "${{ env.PROFILE }}" = "main" ]; then
+              cat > .env <<'EOF'
+            TZ=Asia/Seoul
+            SPRING_PROFILES_ACTIVE=main
+            ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
+            ADMIN_NAME=${{ env.ADMIN_NAME }}
+            ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            docker build -t "$APP" .
+            MAIN_DB_URL=${{ env.DB_URL }}
+            MAIN_DB_USER=${{ env.DB_USER }}
+            MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
+            MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
+            MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
+            MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
+            MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
+            MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            EOF
+            else
+              cat > .env <<'EOF'
+            TZ=Asia/Seoul
+            SPRING_PROFILES_ACTIVE=test
+            ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
+            ADMIN_NAME=${{ env.ADMIN_NAME }}
+            ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
+            TEST_DB_URL=${{ env.DB_URL }}
+            TEST_DB_USER=${{ env.DB_USER }}
+            TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
+            TEST_JWT_SECRET=${{ env.JWT_SECRET }}
+            TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
+            TEST_REDIS_HOST=${{ env.REDIS_HOST }}
+            TEST_REDIS_PORT=${{ env.REDIS_PORT }}
+            TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            EOF
+            fi
+
+            docker stop "${{ env.APP }}" 2>/dev/null || true
+            docker rm   "${{ env.APP }}" 2>/dev/null || true
+
+            docker build -t "${{ env.APP }}:latest" .
             docker run -d \
-              -p 8080:8080 \
-              --name "$APP" \
-              -e SPRING_PROFILES_ACTIVE=$PROFILE \
-              -e DB_USERNAME_MAIN=$DB_USERNAME \
-              -e DB_PASSWORD_MAIN=$DB_PASSWORD \
-              -e JWT_SECRET=$JWT_SECRET \
-              "$APP"
+              --name "${{ env.APP }}" \
+              --restart unless-stopped \
+              --env-file .env \
+              --add-host=host.docker.internal:host-gateway \
+              -p "${{ env.PORT }}:8080" \
+              "${{ env.APP }}:latest"
+
+            docker logs --tail=120 "${{ env.APP }}" || true

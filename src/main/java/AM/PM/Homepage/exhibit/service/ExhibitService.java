@@ -37,7 +37,7 @@ public class ExhibitService {
     private final ExhibitImageRepository exhibitImageRepository;
     private final StudentRepository studentRepository;
 
-    @Value("${upload.path.exhibit.image}")
+    @Value("${storage.base.path}")
     private String uploadDir;
 
     @Transactional(readOnly = true)
