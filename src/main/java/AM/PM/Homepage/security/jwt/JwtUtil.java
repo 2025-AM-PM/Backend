@@ -12,7 +12,6 @@ import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
 import AM.PM.Homepage.util.redis.RedisUtil;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import java.nio.charset.StandardCharsets;
@@ -32,18 +31,21 @@ import org.springframework.stereotype.Component;
 public class JwtUtil {
 
     private final SecretKey secretKey;
+    private final String issuer;
     private final RedisUtil redisUtil;
+    private final StudentRepository studentRepository;
 
     private final static String JWT_PAYLOAD_CATEGORY = "category";
     private final static String JWT_PAYLOAD_USERNAME = "username";
     private final static String JWT_PAYLOAD_ROLE = "role";
     private final static String JWT_PAYLOAD_ID = "id";
-    private final StudentRepository studentRepository;
 
-    public JwtUtil(@Value("${spring.jwt.secret}") String secretKey, RedisUtil redisUtil,
-                   StudentRepository studentRepository) {
+    public JwtUtil(@Value("${spring.jwt.secret}") String secretKey,
+                   @Value("${spring.jwt.issuer}") String issuer,
+                   RedisUtil redisUtil, StudentRepository studentRepository) {
         this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8),
                 Jwts.SIG.HS256.key().build().getAlgorithm());
+        this.issuer = issuer;
         this.redisUtil = redisUtil;
         this.studentRepository = studentRepository;
     }
@@ -92,7 +94,8 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        StudentRole role = claims.get(JWT_PAYLOAD_ROLE, StudentRole.class);
+        String roleName = claims.get(JWT_PAYLOAD_ROLE, String.class);
+        StudentRole role = StudentRole.valueOf(roleName);
         Collection<? extends GrantedAuthority> authorities =
                 Collections.singletonList(new SimpleGrantedAuthority(role.getAuthority()));
 
