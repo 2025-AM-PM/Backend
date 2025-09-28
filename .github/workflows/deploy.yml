@@ -150,7 +150,6 @@ jobs:
             set -eo pipefail
             cd "${DIR}"
 
-            # --- 필수 변수 검증 (값 자체는 로그에 노출하지 않음) ---
             missing=()
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
             if [ "${PROFILE}" = "main" ]; then
@@ -211,7 +210,3 @@ jobs:
               --add-host=host.docker.internal:host-gateway \
               -p "${PORT}:8080" \
               "${APP}:latest"
-
-            # 헬스체크는 요청대로 제거
-            # 필요 시 아래 로그만 참고
-            docker logs --tail=80 "${APP}" || true
