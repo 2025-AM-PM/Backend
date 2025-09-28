@@ -68,50 +68,51 @@ jobs:
           echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
 
           if [[ "$BRANCH" == "main" ]]; then
-            echo "APP=ampm-backend-main"                >> $GITHUB_ENV
-            echo "PROFILE=main"                          >> $GITHUB_ENV
-            echo "HOST=${{ secrets.MAIN_BACKEND_HOST }}" >> $GITHUB_ENV
-            echo "PORT=${{ secrets.MAIN_BACKEND_PORT }}" >> $GITHUB_ENV
-            echo "USER=${{ secrets.MAIN_BACKEND_USER }}" >> $GITHUB_ENV
-            echo "PASSWORD=${{ secrets.MAIN_BACKEND_PASSWORD }}" >> $GITHUB_ENV
-            echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"   >> $GITHUB_ENV
+            echo "APP=ampm-backend-main"                                  >> $GITHUB_ENV
+            echo "PROFILE=main"                                            >> $GITHUB_ENV
+            echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"               >> $GITHUB_ENV
+            echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"           >> $GITHUB_ENV
+            echo "USER=${{ secrets.MAIN_BACKEND_SSH_USER }}"               >> $GITHUB_ENV
+            echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
+            echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"                     >> $GITHUB_ENV
+            echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"               >> $GITHUB_ENV
 
-            echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}" >> $GITHUB_ENV
-            echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}" >> $GITHUB_ENV
-            echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}" >> $GITHUB_ENV
-            echo "MAIN_JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}" >> $GITHUB_ENV
-            echo "MAIN_JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}" >> $GITHUB_ENV
-            echo "MAIN_REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}" >> $GITHUB_ENV
-            echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}" >> $GITHUB_ENV
-            echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}" >> $GITHUB_ENV
-            echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}" >> $GITHUB_ENV
+            echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}"                  >> $GITHUB_ENV
+            echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}"                >> $GITHUB_ENV
+            echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"        >> $GITHUB_ENV
+            echo "MAIN_JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"          >> $GITHUB_ENV
+            echo "MAIN_JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"          >> $GITHUB_ENV
+            echo "MAIN_REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"          >> $GITHUB_ENV
+            echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"          >> $GITHUB_ENV
+            echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"  >> $GITHUB_ENV
+            echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"      >> $GITHUB_ENV
 
-            # Admin(운영에도 추가)
-            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}" >> $GITHUB_ENV
-            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}" >> $GITHUB_ENV
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> $GITHUB_ENV
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
           else
-            echo "APP=ampm-backend-test"                 >> $GITHUB_ENV
-            echo "PROFILE=test"                           >> $GITHUB_ENV
-            echo "HOST=${{ secrets.TEST_BACKEND_HOST }}"  >> $GITHUB_ENV
-            echo "PORT=${{ secrets.TEST_BACKEND_PORT }}"  >> $GITHUB_ENV
-            echo "USER=${{ secrets.TEST_BACKEND_USER }}"  >> $GITHUB_ENV
-            echo "PASSWORD=${{ secrets.TEST_BACKEND_PASSWORD }}" >> $GITHUB_ENV
-            echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"    >> $GITHUB_ENV
+            echo "APP=ampm-backend-test"                                   >> $GITHUB_ENV
+            echo "PROFILE=test"                                            >> $GITHUB_ENV
+            echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"               >> $GITHUB_ENV
+            echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"           >> $GITHUB_ENV
+            echo "USER=${{ secrets.TEST_BACKEND_SSH_USER }}"               >> $GITHUB_ENV
+            echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
+            echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"                     >> $GITHUB_ENV
+            echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"               >> $GITHUB_ENV
 
-            echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}" >> $GITHUB_ENV
-            echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}" >> $GITHUB_ENV
-            echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}" >> $GITHUB_ENV
-            echo "TEST_JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}" >> $GITHUB_ENV
-            echo "TEST_JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}" >> $GITHUB_ENV
-            echo "TEST_REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}" >> $GITHUB_ENV
-            echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}" >> $GITHUB_ENV
-            echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}" >> $GITHUB_ENV
-            echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}" >> $GITHUB_ENV
+            echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}"                  >> $GITHUB_ENV
+            echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}"                >> $GITHUB_ENV
+            echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"        >> $GITHUB_ENV
+            echo "TEST_JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"          >> $GITHUB_ENV
+            echo "TEST_JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"          >> $GITHUB_ENV
+            echo "TEST_REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"          >> $GITHUB_ENV
+            echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"          >> $GITHUB_ENV
+            echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"  >> $GITHUB_ENV
+            echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"      >> $GITHUB_ENV
 
-            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}" >> $GITHUB_ENV
-            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}" >> $GITHUB_ENV
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> $GITHUB_ENV
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
           fi
 
       - name: Prepare remote directory
@@ -120,6 +121,7 @@ jobs:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
           script_stop: true
           envs: DIR
           script: |
@@ -131,6 +133,7 @@ jobs:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
           source: "app.jar,Dockerfile"
           target: "${{ env.DIR }}/"
 
@@ -140,11 +143,11 @@ jobs:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
+          port: ${{ env.SSH_PORT }}
           script_stop: true
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
             set -euo pipefail
-
             cd "${DIR}"
 
             echo "▶ Create runtime .env for profile: ${PROFILE}"
@@ -175,7 +178,6 @@ jobs:
                 echo "TEST_STORAGE_BASE=${TEST_STORAGE_BASE}"
               fi
 
-              # 운영/테스트 공통 Admin (요청대로 main에도 반영)
               echo "ADMIN_NUMBER=${ADMIN_NUMBER}"
               echo "ADMIN_NAME=${ADMIN_NAME}"
               echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
@@ -193,6 +195,7 @@ jobs:
               --name "${APP}" \
               --restart unless-stopped \
               --env-file .env \
+              --add-host=host.docker.internal:host-gateway \
               -p "${PORT}:8080" \
               "${APP}:latest"
 
