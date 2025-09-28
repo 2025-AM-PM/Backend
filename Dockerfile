@@ -1,5 +1,8 @@
-# 실행 전용 이미지이므로 멀티-스테이지 없이 JRE만 사용
+# 실행 전용 이미지 (JRE)
 FROM eclipse-temurin:21-jre
+
+ENV TZ=Asia/Seoul
+ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Seoul"
 
 WORKDIR /app
 COPY app.jar .

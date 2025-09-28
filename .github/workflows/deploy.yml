@@ -6,12 +6,14 @@ on:
 
 env:
   JAVA_VERSION: '21'
+  TZ: 'Asia/Seoul'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     env:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      TZ: 'Asia/Seoul'
 
     steps:
       - uses: actions/checkout@v3
