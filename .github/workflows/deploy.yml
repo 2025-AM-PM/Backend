@@ -147,16 +147,30 @@ jobs:
           script_stop: true
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
-            set -euo pipefail
+            set -eo pipefail
             cd "${DIR}"
+
+            # --- 필수 변수 검증 (값 자체는 로그에 노출하지 않음) ---
+            missing=()
+            required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
+            if [ "${PROFILE}" = "main" ]; then
+              required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
+            else
+              required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
+            fi
+            for v in $required_common $required; do
+              if [ -z "${!v+x}" ] || [ -z "${!v}" ]; then missing+=("$v"); fi
+            done
+            if [ ${#missing[@]} -gt 0 ]; then
+              echo "::error::Missing env vars: ${missing[*]}"; exit 1;
+            fi
 
             echo "▶ Create runtime .env for profile: ${PROFILE}"
             rm -f .env
             {
               echo "TZ=Asia/Seoul"
               echo "SPRING_PROFILES_ACTIVE=${PROFILE}"
-
-              if [[ "${PROFILE}" == "main" ]]; then
+              if [ "${PROFILE}" = "main" ]; then
                 echo "MAIN_DB_URL=${MAIN_DB_URL}"
                 echo "MAIN_DB_USER=${MAIN_DB_USER}"
                 echo "MAIN_DB_PASSWORD=${MAIN_DB_PASSWORD}"
@@ -177,7 +191,6 @@ jobs:
                 echo "TEST_REDIS_PASSWORD=${TEST_REDIS_PASSWORD}"
                 echo "TEST_STORAGE_BASE=${TEST_STORAGE_BASE}"
               fi
-
               echo "ADMIN_NUMBER=${ADMIN_NUMBER}"
               echo "ADMIN_NAME=${ADMIN_NAME}"
               echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
@@ -198,3 +211,7 @@ jobs:
               --add-host=host.docker.internal:host-gateway \
               -p "${PORT}:8080" \
               "${APP}:latest"
+
+            # 헬스체크는 요청대로 제거
+            # 필요 시 아래 로그만 참고
+            docker logs --tail=80 "${APP}" || true
