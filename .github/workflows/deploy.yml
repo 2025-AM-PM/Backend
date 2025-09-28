@@ -73,6 +73,7 @@ jobs:
             echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
             echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"                     >> $GITHUB_ENV
             echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"               >> $GITHUB_ENV
+
             echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}"                  >> $GITHUB_ENV
             echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}"                >> $GITHUB_ENV
             echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"        >> $GITHUB_ENV
@@ -91,6 +92,7 @@ jobs:
             echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
             echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"                     >> $GITHUB_ENV
             echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"               >> $GITHUB_ENV
+
             echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}"                  >> $GITHUB_ENV
             echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}"                >> $GITHUB_ENV
             echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"        >> $GITHUB_ENV
@@ -105,11 +107,16 @@ jobs:
           echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                      >> $GITHUB_ENV
           echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"              >> $GITHUB_ENV
 
-      - name: Sanitize HOST & DIR
+      - name: Sanitize HOST & DIR & PORT
         shell: bash
         run: |
-          echo "HOST=$(printf '%s' "${HOST}" | tr -d '\r' | xargs)" >> $GITHUB_ENV
-          echo "DIR=$(printf '%s' "${DIR}"  | tr -d '\r' | xargs)"  >> $GITHUB_ENV
+          echo "HOST=$(printf '%s' "${HOST}" | tr -d '\r' | xargs)"  >> $GITHUB_ENV
+          echo "DIR=$(printf '%s' "${DIR}"  | tr -d '\r' | xargs)"   >> $GITHUB_ENV
+          CLEAN_PORT="$(printf '%s' "${PORT}" | tr -d '\r' | xargs)"
+          if ! [[ "${CLEAN_PORT}" =~ ^[0-9]{2,5}$ ]]; then
+            echo "::error::Invalid PORT value: '${PORT}'"; exit 1;
+          fi
+          echo "PORT=${CLEAN_PORT}" >> $GITHUB_ENV
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.0.3
@@ -146,7 +153,7 @@ jobs:
           script: |
             set -eo pipefail
 
-            # 디렉터리 보장 (cd 사용 안 함)
+            # 디렉터리 보장 (절대경로만 사용)
             mkdir -p "${DIR}"
 
             # --- 필수 변수 검증 ---
@@ -228,6 +235,7 @@ jobs:
                  echo "== port listeners =="; ss -ltnp | grep ":${PORT} " || true
                  echo "== recent docker events =="; docker events --since 30s --until 0s || true
                  echo "== image history =="; docker history "${APP}:latest" || true
+                 echo "== last 100 lines of container logs (if any) =="; docker logs --tail=100 "${APP}" || true
                  exit ${rc}; }
             set +x
 
