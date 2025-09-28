@@ -2,7 +2,7 @@ name: CI & CD
 
 on:
   push:
-    branches: [main, test]
+    branches: [ main, test ]
 
 env:
   JAVA_VERSION: '21'
@@ -153,10 +153,8 @@ jobs:
           script: |
             set -eo pipefail
 
-            # 디렉터리 보장 (절대경로만 사용)
             mkdir -p "${DIR}"
 
-            # --- 필수 변수 검증 ---
             missing=()
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
             if [ "${PROFILE}" = "main" ]; then
@@ -171,7 +169,6 @@ jobs:
               echo "::error::Missing env vars: ${missing[*]}"; exit 1;
             fi
 
-            # .env 작성 (절대경로)
             ENV_FILE="${DIR}/.env"
             rm -f "${ENV_FILE}"
             {
@@ -238,6 +235,3 @@ jobs:
                  echo "== last 100 lines of container logs (if any) =="; docker logs --tail=100 "${APP}" || true
                  exit ${rc}; }
             set +x
-
-            echo "▶ Recent logs"
-            docker logs --tail=80 "${APP}" || true
