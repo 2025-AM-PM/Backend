@@ -169,24 +169,27 @@ jobs:
           port: ${{ env.SSH_PORT }}
           script_stop: true
           debug: true
+          timeout: 4m
+          command_timeout: 15m
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
+            #!/bin/sh
             set +e
 
             echo "TRACE:0 uname"; uname -a || true
             echo "TRACE:1 os-release"; cat /etc/os-release || true
-            echo "TRACE:2 docker version"; docker version || true
-            echo "TRACE:2a shell info"; echo "SHELL=$(getent passwd $(id -un) 2>/dev/null | cut -d: -f7)"; ps -p $$ -o comm= || true
+            echo "TRACE:2 docker version (client/server)"; docker version || true
 
             echo "TRACE:3 check DIR [$DIR]"
             ls -la "$DIR" || true
-            if [ ! -f "$DIR/Dockerfile" ]; then echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; fi
-            if [ ! -f "$DIR/app.jar" ]; then echo "::error::app.jar missing at $DIR/app.jar"; exit 1; fi
+            [ -f "$DIR/Dockerfile" ] || { echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; }
+            [ -f "$DIR/app.jar" ]     || { echo "::error::app.jar missing at $DIR/app.jar"; exit 1; }
 
             PROFILE="$(printf '%s' "$PROFILE" | tr -d '\r')"
-            echo "TRACE:4 PROFILE=[$PROFILE]"
+            DIR="$(printf '%s' "$DIR" | tr -d '\r')"
+            PORT="$(printf '%s' "$PORT" | tr -d '\r')"
+            echo "TRACE:4 PROFILE=[$PROFILE] PORT=[$PORT] DIR=[$DIR]"
 
-            echo "TRACE:4.1 select required list by case"
             case "$PROFILE" in
               main)
                 required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
@@ -198,82 +201,56 @@ jobs:
                 echo "::error::Unknown PROFILE: $PROFILE"; exit 1;;
             esac
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
-            echo "TRACE:5 required list ready"
 
+            echo "TRACE:5 var presence check"
             missing=""
-            echo "TRACE:6 check required_common"
-            for v in $required_common; do
+            for v in $required_common $required; do
               eval "val=\${$v-}"
-              if [ -z "${val+x}" ]; then
-                echo "REQ:$v=<unset>"; missing="$missing $v"
+              if [ -z "${val+x}" ] || [ -z "$val" ]; then
+                echo "REQ:$v MISSING"; missing="$missing $v"
               else
-                l=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "REQ:$v=len($l)"; [ -z "$val" ] && missing="$missing $v"
+                echo "REQ:$v OK(len=$(printf '%s' "$val" | wc -c | tr -d ' '))"
               fi
             done
-
-            echo "TRACE:7 check profile-specific"
-            for v in $required; do
-              eval "val=\${$v-}"
-              if [ -z "${val+x}" ]; then
-                echo "REQ:$v=<unset>"; missing="$missing $v"
-              else
-                l=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "REQ:$v=len($l)"; [ -z "$val" ] && missing="$missing $v"
-              fi
-            done
-
-            if [ -n "$missing" ]; then
-              echo "::error::Missing/empty env vars:$missing"
-              exit 1
-            fi
-            echo "TRACE:8 env check passed"
-
-            echo "TRACE:8.1 sanitize DIR/PORT"
-            DIR="$(printf '%s' "$DIR" | tr -d '\r')"
-            PORT="$(printf '%s' "$PORT" | tr -d '\r')"
+            [ -z "$missing" ] || { echo "::error::Missing/empty env vars:$missing"; exit 1; }
 
             ENV_FILE="$DIR/.env"
             rm -f "$ENV_FILE"
             {
               echo "TZ=Asia/Seoul"
               echo "SPRING_PROFILES_ACTIVE=$PROFILE"
-              case "$PROFILE" in
-                main)
-                  echo "MAIN_DB_URL=$MAIN_DB_URL"
-                  echo "MAIN_DB_USER=$MAIN_DB_USER"
-                  echo "MAIN_DB_PASSWORD=$MAIN_DB_PASSWORD"
-                  echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
-                  echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
-                  echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
-                  echo "MAIN_REDIS_PORT=$MAIN_REDIS_PORT"
-                  echo "MAIN_REDIS_PASSWORD=$MAIN_REDIS_PASSWORD"
-                  echo "MAIN_STORAGE_BASE=$MAIN_STORAGE_BASE"
-                  ;;
-                *)
-                  echo "TEST_DB_URL=$TEST_DB_URL"
-                  echo "TEST_DB_USER=$TEST_DB_USER"
-                  echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD"
-                  echo "TEST_JWT_SECRET=$TEST_JWT_SECRET"
-                  echo "TEST_JWT_ISSUER=$TEST_JWT_ISSUER"
-                  echo "TEST_REDIS_HOST=$TEST_REDIS_HOST"
-                  echo "TEST_REDIS_PORT=$TEST_REDIS_PORT"
-                  echo "TEST_REDIS_PASSWORD=$TEST_REDIS_PASSWORD"
-                  echo "TEST_STORAGE_BASE=$TEST_STORAGE_BASE"
-                  ;;
-              esac
+              if [ "$PROFILE" = "main" ]; then
+                echo "MAIN_DB_URL=$MAIN_DB_URL"
+                echo "MAIN_DB_USER=$MAIN_DB_USER"
+                echo "MAIN_DB_PASSWORD=$MAIN_DB_PASSWORD"
+                echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
+                echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
+                echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
+                echo "MAIN_REDIS_PORT=$MAIN_REDIS_PORT"
+                echo "MAIN_REDIS_PASSWORD=$MAIN_REDIS_PASSWORD"
+                echo "MAIN_STORAGE_BASE=$MAIN_STORAGE_BASE"
+              else
+                echo "TEST_DB_URL=$TEST_DB_URL"
+                echo "TEST_DB_USER=$TEST_DB_USER"
+                echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD"
+                echo "TEST_JWT_SECRET=$TEST_JWT_SECRET"
+                echo "TEST_JWT_ISSUER=$TEST_JWT_ISSUER"
+                echo "TEST_REDIS_HOST=$TEST_REDIS_HOST"
+                echo "TEST_REDIS_PORT=$TEST_REDIS_PORT"
+                echo "TEST_REDIS_PASSWORD=$TEST_REDIS_PASSWORD"
+                echo "TEST_STORAGE_BASE=$TEST_STORAGE_BASE"
+              fi
               echo "ADMIN_NUMBER=$ADMIN_NUMBER"
               echo "ADMIN_NAME=$ADMIN_NAME"
               echo "ADMIN_PASSWORD=$ADMIN_PASSWORD"
             } > "$ENV_FILE"
             tr -d '\r' < "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
 
-            echo "TRACE:9 .env head (masked)"
+            echo "TRACE:6 .env head (masked)"
             head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
 
-            echo "TRACE:10 validate env-file inside container"
-            docker run --rm --env-file "$ENV_FILE" alpine:3 /bin/sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || {
-              echo "::error::env-file validation failed"; exit 1; }
+            echo "TRACE:7 env-file sanity"
+            docker run --rm --env-file "$ENV_FILE" alpine:3 sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || { echo "::error::env-file validation failed"; exit 1; }
 
             set -e
             set -x
