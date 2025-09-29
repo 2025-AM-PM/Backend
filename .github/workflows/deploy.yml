@@ -160,7 +160,7 @@ jobs:
           overwrite: true
           debug: true
 
-      - name: Deploy on server (Docker build & run) - DEBUG (POSIX sh)
+      - name: Deploy on server (Docker build & run) - HARD DEBUG (POSIX sh)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
@@ -171,40 +171,44 @@ jobs:
           debug: true
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
-            #!/bin/sh
-            # 디버그 1단계: 초기엔 -e 끄고 마커 찍으면서 변수검증
             set +e
 
             echo "TRACE:0 uname"; uname -a || true
             echo "TRACE:1 os-release"; cat /etc/os-release || true
             echo "TRACE:2 docker version"; docker version || true
+            echo "TRACE:2a shell info"; echo "SHELL=$(getent passwd $(id -un) 2>/dev/null | cut -d: -f7)"; ps -p $$ -o comm= || true
 
             echo "TRACE:3 check DIR [$DIR]"
             ls -la "$DIR" || true
             if [ ! -f "$DIR/Dockerfile" ]; then echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; fi
             if [ ! -f "$DIR/app.jar" ]; then echo "::error::app.jar missing at $DIR/app.jar"; exit 1; fi
 
+            PROFILE="$(printf '%s' "$PROFILE" | tr -d '\r')"
             echo "TRACE:4 PROFILE=[$PROFILE]"
+
+            echo "TRACE:4.1 select required list by case"
+            case "$PROFILE" in
+              main)
+                required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
+                ;;
+              test)
+                required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
+                ;;
+              *)
+                echo "::error::Unknown PROFILE: $PROFILE"; exit 1;;
+            esac
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
-            if [ "$PROFILE" = "main" ]; then
-              required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
-            else
-              required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
-            fi
             echo "TRACE:5 required list ready"
 
-            # 상세 변수 검증 (값 길이만 출력, 값 자체는 노출 안함)
             missing=""
             echo "TRACE:6 check required_common"
             for v in $required_common; do
               eval "val=\${$v-}"
               if [ -z "${val+x}" ]; then
-                echo "REQ:$v=<unset>"
-                missing="$missing $v"
+                echo "REQ:$v=<unset>"; missing="$missing $v"
               else
                 l=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "REQ:$v=len($l)"
-                [ -z "$val" ] && missing="$missing $v"
+                echo "REQ:$v=len($l)"; [ -z "$val" ] && missing="$missing $v"
               fi
             done
 
@@ -212,12 +216,10 @@ jobs:
             for v in $required; do
               eval "val=\${$v-}"
               if [ -z "${val+x}" ]; then
-                echo "REQ:$v=<unset>"
-                missing="$missing $v"
+                echo "REQ:$v=<unset>"; missing="$missing $v"
               else
                 l=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "REQ:$v=len($l)"
-                [ -z "$val" ] && missing="$missing $v"
+                echo "REQ:$v=len($l)"; [ -z "$val" ] && missing="$missing $v"
               fi
             done
 
@@ -227,17 +229,81 @@ jobs:
             fi
             echo "TRACE:8 env check passed"
 
-            # .env 파일 생성 (CRLF 제거)
+            echo "TRACE:8.1 sanitize DIR/PORT"
+            DIR="$(printf '%s' "$DIR" | tr -d '\r')"
+            PORT="$(printf '%s' "$PORT" | tr -d '\r')"
+
             ENV_FILE="$DIR/.env"
             rm -f "$ENV_FILE"
             {
               echo "TZ=Asia/Seoul"
               echo "SPRING_PROFILES_ACTIVE=$PROFILE"
-              if [ "$PROFILE" = "main" ]; then
-                echo "MAIN_DB_URL=$MAIN_DB_URL"
-                echo "MAIN_DB_USER=$MAIN_DB_USER"
-                echo "MAIN_DB_PASSWORD=$MAIN_DB_PASSWORD"
-                echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
-                echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
-                echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
-                echo "MAIN_REDIS_PORT=$MAIN_REDIS_POR
+              case "$PROFILE" in
+                main)
+                  echo "MAIN_DB_URL=$MAIN_DB_URL"
+                  echo "MAIN_DB_USER=$MAIN_DB_USER"
+                  echo "MAIN_DB_PASSWORD=$MAIN_DB_PASSWORD"
+                  echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
+                  echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
+                  echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
+                  echo "MAIN_REDIS_PORT=$MAIN_REDIS_PORT"
+                  echo "MAIN_REDIS_PASSWORD=$MAIN_REDIS_PASSWORD"
+                  echo "MAIN_STORAGE_BASE=$MAIN_STORAGE_BASE"
+                  ;;
+                *)
+                  echo "TEST_DB_URL=$TEST_DB_URL"
+                  echo "TEST_DB_USER=$TEST_DB_USER"
+                  echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD"
+                  echo "TEST_JWT_SECRET=$TEST_JWT_SECRET"
+                  echo "TEST_JWT_ISSUER=$TEST_JWT_ISSUER"
+                  echo "TEST_REDIS_HOST=$TEST_REDIS_HOST"
+                  echo "TEST_REDIS_PORT=$TEST_REDIS_PORT"
+                  echo "TEST_REDIS_PASSWORD=$TEST_REDIS_PASSWORD"
+                  echo "TEST_STORAGE_BASE=$TEST_STORAGE_BASE"
+                  ;;
+              esac
+              echo "ADMIN_NUMBER=$ADMIN_NUMBER"
+              echo "ADMIN_NAME=$ADMIN_NAME"
+              echo "ADMIN_PASSWORD=$ADMIN_PASSWORD"
+            } > "$ENV_FILE"
+            tr -d '\r' < "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
+
+            echo "TRACE:9 .env head (masked)"
+            head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
+
+            echo "TRACE:10 validate env-file inside container"
+            docker run --rm --env-file "$ENV_FILE" alpine:3 /bin/sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || {
+              echo "::error::env-file validation failed"; exit 1; }
+
+            set -e
+            set -x
+
+            docker stop "$APP" 2>/dev/null || true
+            docker rm   "$APP" 2>/dev/null || true
+
+            ss -ltnp | grep -E ":$PORT " || true
+            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' | sed -n '1,200p' || true
+            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
+              | awk -v p=":$PORT->" '$0 ~ p {print $1}' \
+              | xargs -r docker stop || true
+
+            DOCKER_BUILDKIT=1 docker build --progress=plain -t "$APP:latest" -f "$DIR/Dockerfile" "$DIR"
+
+            if docker run --help 2>&1 | grep -q 'host-gateway'; then
+              ADDHOST="--add-host=host.docker.internal:host-gateway"
+            else
+              GW_IP="$(ip route | awk '/default/ {print $3; exit}')"
+              [ -n "$GW_IP" ] && ADDHOST="--add-host=host.docker.internal:$GW_IP" || ADDHOST=""
+            fi
+            echo "ADDHOST=$ADDHOST"
+
+            docker run -d \
+              --name "$APP" \
+              --restart unless-stopped \
+              --env-file "$ENV_FILE" \
+              $ADDHOST \
+              -p "$PORT:8080" \
+              "$APP:latest"
+
+            docker ps --filter "name=$APP"
+            docker logs --tail=80 "$APP" || true
