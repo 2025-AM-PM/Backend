@@ -2,7 +2,7 @@ name: minimal-ci-cd
 
 on:
   push:
-    branches: [main, test]
+    branches: [ main, test ]
 
 env:
   JAVA_VERSION: '21'
@@ -106,29 +106,47 @@ jobs:
             set -e
             cd "${{ env.DIR }}"
 
-            # env 파일
-            cat > .env <<EOF
+            if [ "${{ env.PROFILE }}" = "main" ]; then
+              cat > .env <<'EOF'
             TZ=Asia/Seoul
-            SPRING_PROFILES_ACTIVE=${{ env.PROFILE }}
+            SPRING_PROFILES_ACTIVE=main
             ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
-            DB_URL=${{ env.DB_URL }}
-            DB_USER=${{ env.DB_USER }}
-            DB_PASSWORD=${{ env.DB_PASSWORD }}
-            JWT_SECRET=${{ env.JWT_SECRET }}
-            JWT_ISSUER=${{ env.JWT_ISSUER }}
-            REDIS_HOST=${{ env.REDIS_HOST }}
-            REDIS_PORT=${{ env.REDIS_PORT }}
-            REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
-            STORAGE_BASE=${{ env.STORAGE_BASE }}
-            EOF
 
-            # 컨테이너 재기동
+            MAIN_DB_URL=${{ env.DB_URL }}
+            MAIN_DB_USER=${{ env.DB_USER }}
+            MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
+            MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
+            MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
+            MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
+            MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
+            MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            EOF
+            else
+              cat > .env <<'EOF'
+            TZ=Asia/Seoul
+            SPRING_PROFILES_ACTIVE=test
+            ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
+            ADMIN_NAME=${{ env.ADMIN_NAME }}
+            ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
+
+            TEST_DB_URL=${{ env.DB_URL }}
+            TEST_DB_USER=${{ env.DB_USER }}
+            TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
+            TEST_JWT_SECRET=${{ env.JWT_SECRET }}
+            TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
+            TEST_REDIS_HOST=${{ env.REDIS_HOST }}
+            TEST_REDIS_PORT=${{ env.REDIS_PORT }}
+            TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            EOF
+            fi
+
             docker stop "${{ env.APP }}" 2>/dev/null || true
             docker rm   "${{ env.APP }}" 2>/dev/null || true
 
-            # 이미지 빌드 & 실행
             docker build -t "${{ env.APP }}:latest" .
             docker run -d \
               --name "${{ env.APP }}" \
@@ -137,3 +155,5 @@ jobs:
               --add-host=host.docker.internal:host-gateway \
               -p "${{ env.PORT }}:8080" \
               "${{ env.APP }}:latest"
+
+            docker logs --tail=120 "${{ env.APP }}" || true
