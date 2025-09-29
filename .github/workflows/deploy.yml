@@ -29,7 +29,7 @@ jobs:
       - name: Gradle test (profile by branch)
         run: |
           BRANCH="${GITHUB_REF##*/}"
-          if [[ "$BRANCH" == "main" ]]; then
+          if [ "$BRANCH" = "main" ]; then
             ./gradlew test -Dspring.profiles.active=main
           else
             ./gradlew test -Dspring.profiles.active=test
@@ -38,8 +38,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -56,63 +55,59 @@ jobs:
       - name: Prepare artifact
         run: |
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
-          [[ -z "$JAR" ]] && { echo "❌ bootJar not found"; exit 1; }
+          [ -z "$JAR" ] && { echo "❌ bootJar not found"; exit 1; }
           cp "$JAR" app.jar
           ls -lh app.jar
 
       - name: Select environment (main/test) & export variables
-        id: select-env
-        shell: bash
         run: |
           BRANCH="${GITHUB_REF##*/}"
-          echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
-
-          if [[ "$BRANCH" == "main" ]]; then
-            echo "APP=ampm-backend-main"                                  >> $GITHUB_ENV
-            echo "PROFILE=main"                                            >> $GITHUB_ENV
-            echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"               >> $GITHUB_ENV
-            echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"           >> $GITHUB_ENV
-            echo "USER=${{ secrets.MAIN_BACKEND_SSH_USER }}"               >> $GITHUB_ENV
-            echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
-            echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"                     >> $GITHUB_ENV
-            echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"               >> $GITHUB_ENV
-
-            echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}"                  >> $GITHUB_ENV
-            echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}"                >> $GITHUB_ENV
-            echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"        >> $GITHUB_ENV
-            echo "MAIN_JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"          >> $GITHUB_ENV
-            echo "MAIN_JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"          >> $GITHUB_ENV
-            echo "MAIN_REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"          >> $GITHUB_ENV
-            echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"          >> $GITHUB_ENV
-            echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"  >> $GITHUB_ENV
-            echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"      >> $GITHUB_ENV
-
-            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
-            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
+          if [ "$BRANCH" = "main" ]; then
+            {
+              echo "APP=ampm-backend-main"
+              echo "PROFILE=main"
+              echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"
+              echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"
+              echo "USER=${{ secrets.MAIN_BACKEND_SSH_USER }}"
+              echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"
+              echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"
+              echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"
+              echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}"
+              echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}"
+              echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
+              echo "MAIN_JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
+              echo "MAIN_JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
+              echo "MAIN_REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
+              echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
+              echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
+              echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
+              echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
+              echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+            } >> $GITHUB_ENV
           else
-            echo "APP=ampm-backend-test"                                   >> $GITHUB_ENV
-            echo "PROFILE=test"                                            >> $GITHUB_ENV
-            echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"               >> $GITHUB_ENV
-            echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"           >> $GITHUB_ENV
-            echo "USER=${{ secrets.TEST_BACKEND_SSH_USER }}"               >> $GITHUB_ENV
-            echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"       >> $GITHUB_ENV
-            echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"                     >> $GITHUB_ENV
-            echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"               >> $GITHUB_ENV
-
-            echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}"                  >> $GITHUB_ENV
-            echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}"                >> $GITHUB_ENV
-            echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"        >> $GITHUB_ENV
-            echo "TEST_JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"          >> $GITHUB_ENV
-            echo "TEST_JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"          >> $GITHUB_ENV
-            echo "TEST_REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"          >> $GITHUB_ENV
-            echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"          >> $GITHUB_ENV
-            echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"  >> $GITHUB_ENV
-            echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"      >> $GITHUB_ENV
-
-            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
-            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
+            {
+              echo "APP=ampm-backend-test"
+              echo "PROFILE=test"
+              echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"
+              echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"
+              echo "USER=${{ secrets.TEST_BACKEND_SSH_USER }}"
+              echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"
+              echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"
+              echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"
+              echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}"
+              echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}"
+              echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
+              echo "TEST_JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
+              echo "TEST_JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
+              echo "TEST_REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
+              echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
+              echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
+              echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
+              echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
+              echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+            } >> $GITHUB_ENV
           fi
 
       - name: Prepare remote directory
@@ -123,8 +118,6 @@ jobs:
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
           script_stop: true
-          timeout: 2m
-          command_timeout: 10m
           envs: DIR
           script: |
             mkdir -p "$DIR"
@@ -154,9 +147,7 @@ jobs:
           script: |
             #!/bin/sh
             set +e
-
             echo "TRACE:0 docker version"; docker version || true
-
             echo "TRACE:1 check DIR [$DIR]"
             ls -la "$DIR" || true
             [ -f "$DIR/Dockerfile" ] || { echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; }
@@ -224,13 +215,11 @@ jobs:
 
             echo "TRACE:4 .env head (masked)"
             head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
-
             echo "TRACE:5 env-file sanity"
             docker run --rm --env-file "$ENV_FILE" alpine:3 sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || { echo "::error::env-file validation failed"; exit 1; }
 
             set -e
             set -x
-
             docker stop "$APP" 2>/dev/null || true
             docker rm   "$APP" 2>/dev/null || true
 
