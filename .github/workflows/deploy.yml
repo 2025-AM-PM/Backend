@@ -1,3 +1,4 @@
+# .github/workflows/minimal-ci-cd.yml
 name: minimal-ci-cd
 
 on:
@@ -36,13 +37,10 @@ jobs:
               echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"
               echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"
-              echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
               echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
               echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
               echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
-              echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
-              echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
               echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
             } >> $GITHUB_ENV
@@ -56,13 +54,10 @@ jobs:
               echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"
               echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"
-              echo "DB_URL=${{ secrets.TEST_DB_URL }}"
               echo "DB_USER=${{ secrets.TEST_DB_USER }}"
               echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
               echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
-              echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
-              echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
               echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
             } >> $GITHUB_ENV
@@ -72,7 +67,7 @@ jobs:
             echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
             echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
           } >> $GITHUB_ENV
-          # export jar to root
+          # export jar to workspace root for scp
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
           cp "$JAR" app.jar
 
@@ -106,42 +101,58 @@ jobs:
             set -e
             cd "${{ env.DIR }}"
 
+            docker network inspect ampm-net >/dev/null 2>&1 || docker network create ampm-net
+
             if [ "${{ env.PROFILE }}" = "main" ]; then
               cat > .env <<'EOF'
             TZ=Asia/Seoul
             SPRING_PROFILES_ACTIVE=main
+
             ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            MAIN_DB_URL=${{ env.DB_URL }}
+            MAIN_DB_URL=jdbc:postgresql://postgresql-main:5432/ampm_main?applicationName=ampm-backend-main&sslmode=disable
             MAIN_DB_USER=${{ env.DB_USER }}
             MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
+
             MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
             MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
-            MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
-            MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
+
+            MAIN_REDIS_HOST=redis-main
+            MAIN_REDIS_PORT=6379
             MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+
             MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
             EOF
+
+              docker network connect ampm-net postgresql-main 2>/dev/null || true
+              docker network connect ampm-net redis-main       2>/dev/null || true
             else
               cat > .env <<'EOF'
             TZ=Asia/Seoul
             SPRING_PROFILES_ACTIVE=test
+
             ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            TEST_DB_URL=${{ env.DB_URL }}
+            TEST_DB_URL=jdbc:postgresql://postgresql-test:5432/ampm_test?applicationName=ampm-backend-test&sslmode=disable
             TEST_DB_USER=${{ env.DB_USER }}
             TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
+
             TEST_JWT_SECRET=${{ env.JWT_SECRET }}
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
-            TEST_REDIS_HOST=${{ env.REDIS_HOST }}
-            TEST_REDIS_PORT=${{ env.REDIS_PORT }}
+
+            TEST_REDIS_HOST=redis-test
+            TEST_REDIS_PORT=6379
             TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+
             TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
             EOF
+
+              docker network connect ampm-net postgresql-test 2>/dev/null || true
+              docker network connect ampm-net redis-test       2>/dev/null || true
             fi
 
             docker stop "${{ env.APP }}" 2>/dev/null || true
@@ -152,8 +163,6 @@ jobs:
               --name "${{ env.APP }}" \
               --restart unless-stopped \
               --env-file .env \
-              --add-host=host.docker.internal:host-gateway \
+              --network ampm-net \
               -p "${{ env.PORT }}:8080" \
               "${{ env.APP }}:latest"
-
-            docker logs --tail=120 "${{ env.APP }}" || true
