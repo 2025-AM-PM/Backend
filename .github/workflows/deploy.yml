@@ -2,7 +2,7 @@ name: CI & CD
 
 on:
   push:
-    branches: [ main, test ]
+    branches: [main, test]
 
 env:
   JAVA_VERSION: '21'
@@ -27,7 +27,6 @@ jobs:
           cache: gradle
 
       - name: Gradle test (profile by branch)
-        shell: bash
         run: |
           BRANCH="${GITHUB_REF##*/}"
           if [[ "$BRANCH" == "main" ]]; then
@@ -56,19 +55,18 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          set -e
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
           [[ -z "$JAR" ]] && { echo "❌ bootJar not found"; exit 1; }
           cp "$JAR" app.jar
-          echo "== artifact =="
           ls -lh app.jar
-          sha256sum app.jar || true
 
       - name: Select environment (main/test) & export variables
+        id: select-env
         shell: bash
         run: |
-          set -e
           BRANCH="${GITHUB_REF##*/}"
+          echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
+
           if [[ "$BRANCH" == "main" ]]; then
             echo "APP=ampm-backend-main"                                  >> $GITHUB_ENV
             echo "PROFILE=main"                                            >> $GITHUB_ENV
@@ -88,6 +86,10 @@ jobs:
             echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"          >> $GITHUB_ENV
             echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"  >> $GITHUB_ENV
             echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"      >> $GITHUB_ENV
+
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
           else
             echo "APP=ampm-backend-test"                                   >> $GITHUB_ENV
             echo "PROFILE=test"                                            >> $GITHUB_ENV
@@ -107,30 +109,11 @@ jobs:
             echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"          >> $GITHUB_ENV
             echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"  >> $GITHUB_ENV
             echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"      >> $GITHUB_ENV
-          fi
-          echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                  >> $GITHUB_ENV
-          echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                      >> $GITHUB_ENV
-          echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"              >> $GITHUB_ENV
 
-      - name: Sanitize HOST/DIR/PORT & print summary
-        shell: bash
-        run: |
-          set -e
-          echo "HOST=$(printf '%s' "${HOST}" | tr -d '\r' | xargs)"  >> $GITHUB_ENV
-          echo "DIR=$(printf '%s' "${DIR}"  | tr -d '\r' | xargs)"   >> $GITHUB_ENV
-          CLEAN_PORT="$(printf '%s' "${PORT}" | tr -d '\r' | xargs)"
-          if ! [[ "${CLEAN_PORT}" =~ ^[0-9]{2,5}$ ]]; then
-            echo "::error::Invalid PORT value: '${PORT}'"; exit 1;
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"                >> $GITHUB_ENV
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                    >> $GITHUB_ENV
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"            >> $GITHUB_ENV
           fi
-          echo "PORT=${CLEAN_PORT}" >> $GITHUB_ENV
-          echo "== env summary =="
-          echo "APP=${APP}"
-          echo "PROFILE=${PROFILE}"
-          echo "HOST=${HOST}"
-          echo "SSH_PORT=${SSH_PORT}"
-          echo "USER=${USER}"
-          echo "DIR=${DIR}"
-          echo "PORT=${PORT}"
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.0.3
@@ -140,13 +123,11 @@ jobs:
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
           script_stop: true
+          timeout: 2m
+          command_timeout: 10m
           envs: DIR
-          debug: true
           script: |
-            set -e
-            echo "== remote mkdir -p ${DIR} =="
-            mkdir -p "${DIR}"
-            echo "== remote ls -la ${DIR} ==" && ls -la "${DIR}" || true
+            mkdir -p "$DIR"
 
       - name: Copy artifacts to server
         uses: appleboy/scp-action@v0.1.7
@@ -157,10 +138,8 @@ jobs:
           port: ${{ env.SSH_PORT }}
           source: "app.jar,Dockerfile"
           target: "${{ env.DIR }}/"
-          overwrite: true
-          debug: true
 
-      - name: Deploy on server (Docker build & run) - HARD DEBUG (POSIX sh)
+      - name: Deploy on server (Docker build & run) - DEBUG
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
@@ -169,18 +148,16 @@ jobs:
           port: ${{ env.SSH_PORT }}
           script_stop: true
           debug: true
-          timeout: 4m
+          timeout: 2m
           command_timeout: 15m
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
             #!/bin/sh
             set +e
 
-            echo "TRACE:0 uname"; uname -a || true
-            echo "TRACE:1 os-release"; cat /etc/os-release || true
-            echo "TRACE:2 docker version (client/server)"; docker version || true
+            echo "TRACE:0 docker version"; docker version || true
 
-            echo "TRACE:3 check DIR [$DIR]"
+            echo "TRACE:1 check DIR [$DIR]"
             ls -la "$DIR" || true
             [ -f "$DIR/Dockerfile" ] || { echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; }
             [ -f "$DIR/app.jar" ]     || { echo "::error::app.jar missing at $DIR/app.jar"; exit 1; }
@@ -188,7 +165,7 @@ jobs:
             PROFILE="$(printf '%s' "$PROFILE" | tr -d '\r')"
             DIR="$(printf '%s' "$DIR" | tr -d '\r')"
             PORT="$(printf '%s' "$PORT" | tr -d '\r')"
-            echo "TRACE:4 PROFILE=[$PROFILE] PORT=[$PORT] DIR=[$DIR]"
+            echo "TRACE:2 PROFILE=[$PROFILE] PORT=[$PORT] DIR=[$DIR]"
 
             case "$PROFILE" in
               main)
@@ -197,12 +174,11 @@ jobs:
               test)
                 required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
                 ;;
-              *)
-                echo "::error::Unknown PROFILE: $PROFILE"; exit 1;;
+              *) echo "::error::Unknown PROFILE: $PROFILE"; exit 1;;
             esac
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
 
-            echo "TRACE:5 var presence check"
+            echo "TRACE:3 var presence check"
             missing=""
             for v in $required_common $required; do
               eval "val=\${$v-}"
@@ -246,10 +222,10 @@ jobs:
             } > "$ENV_FILE"
             tr -d '\r' < "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
 
-            echo "TRACE:6 .env head (masked)"
+            echo "TRACE:4 .env head (masked)"
             head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
 
-            echo "TRACE:7 env-file sanity"
+            echo "TRACE:5 env-file sanity"
             docker run --rm --env-file "$ENV_FILE" alpine:3 sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || { echo "::error::env-file validation failed"; exit 1; }
 
             set -e
