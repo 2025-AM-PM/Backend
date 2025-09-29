@@ -1,3 +1,4 @@
+# .github/workflows/minimal-ci-cd.yml
 name: minimal-ci-cd
 
 on:
@@ -24,6 +25,7 @@ jobs:
         run: ./gradlew clean bootJar -x test
 
       - name: Pick environment
+        shell: bash
         run: |
           BRANCH="${GITHUB_REF##*/}"
           if [ "$BRANCH" = "main" ]; then
@@ -31,6 +33,9 @@ jobs:
               echo "APP=ampm-backend-main"
               echo "PROFILE=main"
               echo "NET=ampm-main-net"
+              echo "DB_NAME=ampm_main"
+              echo "DB_HOST=postgresql-main"
+
               echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"
               echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"
               echo "USER=${{ secrets.MAIN_BACKEND_SSH_USER }}"
@@ -41,7 +46,6 @@ jobs:
               echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
               echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
-              echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
               echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
             } >> $GITHUB_ENV
           else
@@ -49,6 +53,9 @@ jobs:
               echo "APP=ampm-backend-test"
               echo "PROFILE=test"
               echo "NET=ampm-test-net"
+              echo "DB_NAME=ampm_test"
+              echo "DB_HOST=postgresql-test"
+
               echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"
               echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"
               echo "USER=${{ secrets.TEST_BACKEND_SSH_USER }}"
@@ -59,15 +66,11 @@ jobs:
               echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
               echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
-              echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
               echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
             } >> $GITHUB_ENV
           fi
-          {
-            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
-            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
-            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
-          } >> $GITHUB_ENV
+
+          # export jar to workspace root for scp
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
           cp "$JAR" app.jar
 
@@ -100,7 +103,7 @@ jobs:
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
           script: |
-            set -e
+            set -euo pipefail
             cd "${{ env.DIR }}"
 
             docker network inspect "${{ env.NET }}" >/dev/null 2>&1 || docker network create "${{ env.NET }}"
@@ -114,21 +117,15 @@ jobs:
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            MAIN_DB_URL=jdbc:postgresql://postgresql-main:5432/ampm_main?applicationName=ampm-backend-main&sslmode=disable
+            MAIN_DB_URL=jdbc:postgresql://${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}?applicationName=ampm-backend-main&sslmode=disable
             MAIN_DB_USER=${{ env.DB_USER }}
             MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
 
             MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
             MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
-            MAIN_REDIS_HOST=redis-main
-            MAIN_REDIS_PORT=6379
-            MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
-
             MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
             EOF
-              DB_CONTAINER=postgresql-main
-              REDIS_CONTAINER=redis-main
             else
               cat > .env <<'EOF'
             TZ=Asia/Seoul
@@ -138,27 +135,28 @@ jobs:
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            TEST_DB_URL=jdbc:postgresql://postgresql-test:5432/ampm_test?applicationName=ampm-backend-test&sslmode=disable
+            TEST_DB_URL=jdbc:postgresql://${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}?applicationName=ampm-backend-test&sslmode=disable
             TEST_DB_USER=${{ env.DB_USER }}
             TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
 
             TEST_JWT_SECRET=${{ env.JWT_SECRET }}
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
-            TEST_REDIS_HOST=redis-test
-            TEST_REDIS_PORT=6379
-            TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
-
             TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
             EOF
-              DB_CONTAINER=postgresql-test
-              REDIS_CONTAINER=redis-test
             fi
 
-            docker stop "${{ env.APP }}" 2>/dev/null || true
-            docker rm   "${{ env.APP }}" 2>/dev/null || true
-
+            docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
+
+            echo "Waiting for PostgreSQL to be ready..."
+            ATTEMPTS=0
+            until docker run --rm --network "${{ env.NET }}" postgres:16 \
+              pg_isready -h "${{ env.DB_HOST }}" -p 5432 -d "${{ env.DB_NAME }}" -q; do
+              ATTEMPTS=$((ATTEMPTS+1))
+              if [ $ATTEMPTS -gt 60 ]; then echo "PostgreSQL not ready"; exit 1; fi
+              sleep 2
+            done
 
             docker run -d \
               --name "${{ env.APP }}" \
