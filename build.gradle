@@ -38,6 +38,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'io.projectreactor:reactor-test' // ?
 
+    //stress test
+    runtimeOnly  'io.micrometer:micrometer-registry-prometheus'
+
     // dbms
     implementation 'org.postgresql:postgresql:42.7.7'
     implementation 'com.mysql:mysql-connector-j:9.2.0'
