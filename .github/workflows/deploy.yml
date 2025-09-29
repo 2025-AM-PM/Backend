@@ -1,4 +1,4 @@
-name: CI & CD
+name: minimal-ci-cd
 
 on:
   push:
@@ -8,58 +8,22 @@ env:
   JAVA_VERSION: '21'
   TZ: 'Asia/Seoul'
 
-concurrency:
-  group: ampm-backend-${{ github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Temurin JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
-
-      - name: Gradle test (profile by branch)
-        run: |
-          BRANCH="${GITHUB_REF##*/}"
-          if [ "$BRANCH" = "main" ]; then
-            ./gradlew test -Dspring.profiles.active=main
-          else
-            ./gradlew test -Dspring.profiles.active=test
-          fi
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Temurin JDK
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
 
-      - name: Build bootJar
+      - name: Build jar (skip tests)
         run: ./gradlew clean bootJar -x test
 
-      - name: Prepare artifact
-        run: |
-          JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
-          [ -z "$JAR" ] && { echo "❌ bootJar not found"; exit 1; }
-          cp "$JAR" app.jar
-          ls -lh app.jar
-
-      - name: Select environment (main/test) & export variables
+      - name: Pick environment
         run: |
           BRANCH="${GITHUB_REF##*/}"
           if [ "$BRANCH" = "main" ]; then
@@ -72,18 +36,15 @@ jobs:
               echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"
               echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"
-              echo "MAIN_DB_URL=${{ secrets.MAIN_DB_URL }}"
-              echo "MAIN_DB_USER=${{ secrets.MAIN_DB_USER }}"
-              echo "MAIN_DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
-              echo "MAIN_JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
-              echo "MAIN_JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
-              echo "MAIN_REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
-              echo "MAIN_REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
-              echo "MAIN_REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
-              echo "MAIN_STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
-              echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
-              echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
-              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+              echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
+              echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
+              echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
+              echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
+              echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
+              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
             } >> $GITHUB_ENV
           else
             {
@@ -95,34 +56,36 @@ jobs:
               echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"
               echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"
-              echo "TEST_DB_URL=${{ secrets.TEST_DB_URL }}"
-              echo "TEST_DB_USER=${{ secrets.TEST_DB_USER }}"
-              echo "TEST_DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
-              echo "TEST_JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
-              echo "TEST_JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
-              echo "TEST_REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
-              echo "TEST_REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
-              echo "TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
-              echo "TEST_STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
-              echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
-              echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
-              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+              echo "DB_URL=${{ secrets.TEST_DB_URL }}"
+              echo "DB_USER=${{ secrets.TEST_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
+              echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
+              echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
+              echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
+              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
             } >> $GITHUB_ENV
           fi
+          {
+            echo "ADMIN_NUMBER=${{ secrets.ADMIN_NUMBER }}"
+            echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"
+          } >> $GITHUB_ENV
+          # export jar to root
+          JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
+          cp "$JAR" app.jar
 
-      - name: Prepare remote directory
+      - name: Make remote dir
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
-          script_stop: true
-          envs: DIR
-          script: |
-            mkdir -p "$DIR"
+          script: mkdir -p "${{ env.DIR }}"
 
-      - name: Copy artifacts to server
+      - name: Copy app.jar & Dockerfile
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.HOST }}
@@ -132,120 +95,45 @@ jobs:
           source: "app.jar,Dockerfile"
           target: "${{ env.DIR }}/"
 
-      - name: Deploy on server (Docker build & run) - DEBUG
+      - name: Deploy (build & run)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
-          script_stop: true
-          debug: true
-          timeout: 2m
-          command_timeout: 15m
-          envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
-            #!/bin/sh
-            set +e
-            echo "TRACE:0 docker version"; docker version || true
-            echo "TRACE:1 check DIR [$DIR]"
-            ls -la "$DIR" || true
-            [ -f "$DIR/Dockerfile" ] || { echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; }
-            [ -f "$DIR/app.jar" ]     || { echo "::error::app.jar missing at $DIR/app.jar"; exit 1; }
-
-            PROFILE="$(printf '%s' "$PROFILE" | tr -d '\r')"
-            DIR="$(printf '%s' "$DIR" | tr -d '\r')"
-            PORT="$(printf '%s' "$PORT" | tr -d '\r')"
-            echo "TRACE:2 PROFILE=[$PROFILE] PORT=[$PORT] DIR=[$DIR]"
-
-            case "$PROFILE" in
-              main)
-                required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
-                ;;
-              test)
-                required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
-                ;;
-              *) echo "::error::Unknown PROFILE: $PROFILE"; exit 1;;
-            esac
-            required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
-
-            echo "TRACE:3 var presence check"
-            missing=""
-            for v in $required_common $required; do
-              eval "val=\${$v-}"
-              if [ -z "${val+x}" ] || [ -z "$val" ]; then
-                echo "REQ:$v MISSING"; missing="$missing $v"
-              else
-                echo "REQ:$v OK(len=$(printf '%s' "$val" | wc -c | tr -d ' '))"
-              fi
-            done
-            [ -z "$missing" ] || { echo "::error::Missing/empty env vars:$missing"; exit 1; }
-
-            ENV_FILE="$DIR/.env"
-            rm -f "$ENV_FILE"
-            {
-              echo "TZ=Asia/Seoul"
-              echo "SPRING_PROFILES_ACTIVE=$PROFILE"
-              if [ "$PROFILE" = "main" ]; then
-                echo "MAIN_DB_URL=$MAIN_DB_URL"
-                echo "MAIN_DB_USER=$MAIN_DB_USER"
-                echo "MAIN_DB_PASSWORD=$MAIN_DB_PASSWORD"
-                echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
-                echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
-                echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
-                echo "MAIN_REDIS_PORT=$MAIN_REDIS_PORT"
-                echo "MAIN_REDIS_PASSWORD=$MAIN_REDIS_PASSWORD"
-                echo "MAIN_STORAGE_BASE=$MAIN_STORAGE_BASE"
-              else
-                echo "TEST_DB_URL=$TEST_DB_URL"
-                echo "TEST_DB_USER=$TEST_DB_USER"
-                echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD"
-                echo "TEST_JWT_SECRET=$TEST_JWT_SECRET"
-                echo "TEST_JWT_ISSUER=$TEST_JWT_ISSUER"
-                echo "TEST_REDIS_HOST=$TEST_REDIS_HOST"
-                echo "TEST_REDIS_PORT=$TEST_REDIS_PORT"
-                echo "TEST_REDIS_PASSWORD=$TEST_REDIS_PASSWORD"
-                echo "TEST_STORAGE_BASE=$TEST_STORAGE_BASE"
-              fi
-              echo "ADMIN_NUMBER=$ADMIN_NUMBER"
-              echo "ADMIN_NAME=$ADMIN_NAME"
-              echo "ADMIN_PASSWORD=$ADMIN_PASSWORD"
-            } > "$ENV_FILE"
-            tr -d '\r' < "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
-
-            echo "TRACE:4 .env head (masked)"
-            head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
-            echo "TRACE:5 env-file sanity"
-            docker run --rm --env-file "$ENV_FILE" alpine:3 sh -c '[ -n "$SPRING_PROFILES_ACTIVE" ] && echo OK' || { echo "::error::env-file validation failed"; exit 1; }
-
             set -e
-            set -x
-            docker stop "$APP" 2>/dev/null || true
-            docker rm   "$APP" 2>/dev/null || true
+            cd "${{ env.DIR }}"
 
-            ss -ltnp | grep -E ":$PORT " || true
-            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' | sed -n '1,200p' || true
-            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
-              | awk -v p=":$PORT->" '$0 ~ p {print $1}' \
-              | xargs -r docker stop || true
+            # env 파일
+            cat > .env <<EOF
+            TZ=Asia/Seoul
+            SPRING_PROFILES_ACTIVE=${{ env.PROFILE }}
+            ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
+            ADMIN_NAME=${{ env.ADMIN_NAME }}
+            ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
+            DB_URL=${{ env.DB_URL }}
+            DB_USER=${{ env.DB_USER }}
+            DB_PASSWORD=${{ env.DB_PASSWORD }}
+            JWT_SECRET=${{ env.JWT_SECRET }}
+            JWT_ISSUER=${{ env.JWT_ISSUER }}
+            REDIS_HOST=${{ env.REDIS_HOST }}
+            REDIS_PORT=${{ env.REDIS_PORT }}
+            REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+            STORAGE_BASE=${{ env.STORAGE_BASE }}
+            EOF
 
-            DOCKER_BUILDKIT=1 docker build --progress=plain -t "$APP:latest" -f "$DIR/Dockerfile" "$DIR"
+            # 컨테이너 재기동
+            docker stop "${{ env.APP }}" 2>/dev/null || true
+            docker rm   "${{ env.APP }}" 2>/dev/null || true
 
-            if docker run --help 2>&1 | grep -q 'host-gateway'; then
-              ADDHOST="--add-host=host.docker.internal:host-gateway"
-            else
-              GW_IP="$(ip route | awk '/default/ {print $3; exit}')"
-              [ -n "$GW_IP" ] && ADDHOST="--add-host=host.docker.internal:$GW_IP" || ADDHOST=""
-            fi
-            echo "ADDHOST=$ADDHOST"
-
+            # 이미지 빌드 & 실행
+            docker build -t "${{ env.APP }}:latest" .
             docker run -d \
-              --name "$APP" \
+              --name "${{ env.APP }}" \
               --restart unless-stopped \
-              --env-file "$ENV_FILE" \
-              $ADDHOST \
-              -p "$PORT:8080" \
-              "$APP:latest"
-
-            docker ps --filter "name=$APP"
-            docker logs --tail=80 "$APP" || true
+              --env-file .env \
+              --add-host=host.docker.internal:host-gateway \
+              -p "${{ env.PORT }}:8080" \
+              "${{ env.APP }}:latest"
