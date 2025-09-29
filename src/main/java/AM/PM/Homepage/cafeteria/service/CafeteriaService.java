@@ -30,38 +30,39 @@ public class CafeteriaService {
     }
 
     public List<CafeteriaResponse> scrapeMenus() throws IOException {
-        List<CafeteriaResponse> allMenus = new ArrayList<>();
-
-        Document doc = Jsoup.connect(JBNU_COOP_URL)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                .referrer(JBNU_COOP_URL)
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
-                .header("Accept-Encoding", "gzip, deflate, br")
-                .get();
-
-        Elements sections = doc.select(".contentsArea.WeekMenu .section");
-
-        if (sections.isEmpty()) {
-            throw new IOException("메인 콘텐츠('.section')를 찾을 수 없습니다. 웹 페이지 구조가 변경되었을 수 있습니다.");
-        }
-
-        String dateInfo = sections.first().select(".ttArea .info").text();
-        List<LocalDate> weekDates = parseDateRange(dateInfo);
-
-        if (weekDates.isEmpty()) {
-            throw new IOException("유효한 주중 날짜를 파싱할 수 없습니다: " + dateInfo);
-        }
-
-        for (Element section : sections) {
-            String cafeteria = section.select("h5.title").text();
-            if (cafeteria.equals("진수원")) {
-                allMenus.addAll(parseJinsu(section, weekDates));
-            } else if (cafeteria.equals("후생관")) {
-                allMenus.addAll(parseHoosaeng(section, weekDates));
-            }
-        }
-        return allMenus;
+//        List<CafeteriaResponse> allMenus = new ArrayList<>();
+//
+//        Document doc = Jsoup.connect(JBNU_COOP_URL)
+//                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+//                .referrer(JBNU_COOP_URL)
+//                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+//                .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+//                .header("Accept-Encoding", "gzip, deflate, br")
+//                .get();
+//
+//        Elements sections = doc.select(".contentsArea.WeekMenu .section");
+//
+//        if (sections.isEmpty()) {
+//            throw new IOException("메인 콘텐츠('.section')를 찾을 수 없습니다. 웹 페이지 구조가 변경되었을 수 있습니다.");
+//        }
+//
+//        String dateInfo = sections.first().select(".ttArea .info").text();
+//        List<LocalDate> weekDates = parseDateRange(dateInfo);
+//
+//        if (weekDates.isEmpty()) {
+//            throw new IOException("유효한 주중 날짜를 파싱할 수 없습니다: " + dateInfo);
+//        }
+//
+//        for (Element section : sections) {
+//            String cafeteria = section.select("h5.title").text();
+//            if (cafeteria.equals("진수원")) {
+//                allMenus.addAll(parseJinsu(section, weekDates));
+//            } else if (cafeteria.equals("후생관")) {
+//                allMenus.addAll(parseHoosaeng(section, weekDates));
+//            }
+//        }
+//        return allMenus;
+        return null;
     }
 
     private List<CafeteriaResponse> parseJinsu(Element section, List<LocalDate> weekDates) {
