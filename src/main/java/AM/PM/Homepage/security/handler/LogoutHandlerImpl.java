@@ -7,7 +7,6 @@ import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.refreshtoken.repository.RefreshTokenRepository;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import AM.PM.Homepage.util.redis.RedisUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,6 @@ public class LogoutHandlerImpl implements LogoutHandler {
 
     private final RefreshTokenRepository tokenRepository;
     private final JwtUtil jwtUtil;
-    private final RedisUtil redisUtil;
 
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
@@ -33,7 +31,7 @@ public class LogoutHandlerImpl implements LogoutHandler {
         }
         accessToken = authHeader.substring(7);
 
-        if(!jwtUtil.validateToken(accessToken)) {
+        if (!jwtUtil.validateToken(accessToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -41,10 +39,5 @@ public class LogoutHandlerImpl implements LogoutHandler {
         Long studentId = userAuth.getId();
 
         tokenRepository.deleteById(studentId);
-
-        Long expiration = jwtUtil.getExpiration(accessToken);
-        if (expiration > 0) {
-            redisUtil.setBlackList(accessToken, "logout", expiration);
-        }
     }
 }

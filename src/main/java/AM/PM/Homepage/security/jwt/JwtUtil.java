@@ -10,7 +10,6 @@ import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.util.constant.JwtTokenExpirationTime;
-import AM.PM.Homepage.util.redis.RedisUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -32,7 +31,6 @@ public class JwtUtil {
 
     private final SecretKey secretKey;
     private final String issuer;
-    private final RedisUtil redisUtil;
     private final StudentRepository studentRepository;
 
     private final static String JWT_PAYLOAD_CATEGORY = "category";
@@ -42,11 +40,10 @@ public class JwtUtil {
 
     public JwtUtil(@Value("${spring.jwt.secret}") String secretKey,
                    @Value("${spring.jwt.issuer}") String issuer,
-                   RedisUtil redisUtil, StudentRepository studentRepository) {
+                   StudentRepository studentRepository) {
         this.secretKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8),
                 Jwts.SIG.HS256.key().build().getAlgorithm());
         this.issuer = issuer;
-        this.redisUtil = redisUtil;
         this.studentRepository = studentRepository;
     }
 
@@ -129,9 +126,13 @@ public class JwtUtil {
         return expirationDate.getTime() - now.getTime();
     }
 
-    public boolean validateToken(String token) throws JwtException {
-        Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
-        return !redisUtil.hasKeyBlackList(token);
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private String generateToken(Long studentId, String category, String username, StudentRole role,
