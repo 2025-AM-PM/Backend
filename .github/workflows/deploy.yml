@@ -123,7 +123,7 @@ jobs:
             echo "::error::Invalid PORT value: '${PORT}'"; exit 1;
           fi
           echo "PORT=${CLEAN_PORT}" >> $GITHUB_ENV
-          echo "== env summary (masked) =="
+          echo "== env summary =="
           echo "APP=${APP}"
           echo "PROFILE=${PROFILE}"
           echo "HOST=${HOST}"
@@ -172,9 +172,9 @@ jobs:
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
             #!/bin/sh
-            set -eu
+            set -e  # '-u' 제거 (unset 변수 접근 시 종료 방지)
 
-            echo "== uname -a ==" && uname -a || true
+            echo "== uname - a ==" && uname -a || true
             echo "== /etc/os-release ==" && cat /etc/os-release || true
             echo "== ip route ==" && ip route || true
             echo "== free -h ==" && free -h || true
@@ -187,22 +187,51 @@ jobs:
             if [ ! -f "$DIR/Dockerfile" ]; then echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; fi
             if [ ! -f "$DIR/app.jar" ]; then echo "::error::app.jar missing at $DIR/app.jar"; exit 1; fi
 
-            echo "== required vars check (presence only) =="
-            missing=""
+            echo "== PROFILE = $PROFILE =="
+
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
             if [ "$PROFILE" = "main" ]; then
               required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
             else
               required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
             fi
-            for v in $required_common $required; do
-              eval "val=\${$v:-}"
-              if [ -z "$val" ]; then
+
+            echo "== required_common presence =="
+            missing=""
+            for v in $required_common; do
+              eval "val=\${$v-}"
+              if [ -z "${val+x}" ]; then
+                echo "$v: <unset>"
                 missing="$missing $v"
+              else
+                len=$(printf '%s' "$val" | wc -c | tr -d ' ')
+                echo "$v: set (len=$len)"
+                if [ -z "$val" ]; then
+                  echo "$v: <empty>"
+                  missing="$missing $v"
+                fi
               fi
             done
+
+            echo "== profile-specific presence =="
+            for v in $required; do
+              eval "val=\${$v-}"
+              if [ -z "${val+x}" ]; then
+                echo "$v: <unset>"
+                missing="$missing $v"
+              else
+                len=$(printf '%s' "$val" | wc -c | tr -d ' ')
+                echo "$v: set (len=$len)"
+                if [ -z "$val" ]; then
+                  echo "$v: <empty>"
+                  missing="$missing $v"
+                fi
+              fi
+            done
+
             if [ -n "$missing" ]; then
-              echo "::error::Missing env vars:$missing"; exit 1;
+              echo "::error::Missing/empty env vars:$missing"
+              exit 1
             fi
 
             ENV_FILE="$DIR/.env"
@@ -275,6 +304,7 @@ jobs:
                 $ADDHOST \
                 -p "$PORT:8080" \
                 "$APP:latest" 2>&1 || true )"
+
             # Check if container actually started
             if ! docker ps --format '{{.Names}}' | grep -qx "$APP"; then
               echo "❌ docker run failed"
