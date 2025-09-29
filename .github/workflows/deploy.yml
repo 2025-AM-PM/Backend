@@ -2,7 +2,7 @@ name: CI & CD
 
 on:
   push:
-    branches: [main, test]
+    branches: [ main, test ]
 
 env:
   JAVA_VERSION: '21'
@@ -172,60 +172,52 @@ jobs:
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
             #!/bin/sh
-            set -e  # '-u' 제거 (unset 변수 접근 시 종료 방지)
+            # 디버그 1단계: 초기엔 -e 끄고 마커 찍으면서 변수검증
+            set +e
 
-            echo "== uname - a ==" && uname -a || true
-            echo "== /etc/os-release ==" && cat /etc/os-release || true
-            echo "== ip route ==" && ip route || true
-            echo "== free -h ==" && free -h || true
-            echo "== df -h / ==" && df -h / || true
-            echo "== which docker ==" && which docker || true
-            echo "== docker version ==" && docker version || true
+            echo "TRACE:0 uname"; uname -a || true
+            echo "TRACE:1 os-release"; cat /etc/os-release || true
+            echo "TRACE:2 docker version"; docker version || true
 
-            echo "== check directory & files =="
+            echo "TRACE:3 check DIR [$DIR]"
             ls -la "$DIR" || true
             if [ ! -f "$DIR/Dockerfile" ]; then echo "::error::Dockerfile missing at $DIR/Dockerfile"; exit 1; fi
             if [ ! -f "$DIR/app.jar" ]; then echo "::error::app.jar missing at $DIR/app.jar"; exit 1; fi
 
-            echo "== PROFILE = $PROFILE =="
-
+            echo "TRACE:4 PROFILE=[$PROFILE]"
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
             if [ "$PROFILE" = "main" ]; then
               required="MAIN_DB_URL MAIN_DB_USER MAIN_DB_PASSWORD MAIN_JWT_SECRET MAIN_JWT_ISSUER MAIN_REDIS_HOST MAIN_REDIS_PORT MAIN_REDIS_PASSWORD MAIN_STORAGE_BASE"
             else
               required="TEST_DB_URL TEST_DB_USER TEST_DB_PASSWORD TEST_JWT_SECRET TEST_JWT_ISSUER TEST_REDIS_HOST TEST_REDIS_PORT TEST_REDIS_PASSWORD TEST_STORAGE_BASE"
             fi
+            echo "TRACE:5 required list ready"
 
-            echo "== required_common presence =="
+            # 상세 변수 검증 (값 길이만 출력, 값 자체는 노출 안함)
             missing=""
+            echo "TRACE:6 check required_common"
             for v in $required_common; do
               eval "val=\${$v-}"
               if [ -z "${val+x}" ]; then
-                echo "$v: <unset>"
+                echo "REQ:$v=<unset>"
                 missing="$missing $v"
               else
-                len=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "$v: set (len=$len)"
-                if [ -z "$val" ]; then
-                  echo "$v: <empty>"
-                  missing="$missing $v"
-                fi
+                l=$(printf '%s' "$val" | wc -c | tr -d ' ')
+                echo "REQ:$v=len($l)"
+                [ -z "$val" ] && missing="$missing $v"
               fi
             done
 
-            echo "== profile-specific presence =="
+            echo "TRACE:7 check profile-specific"
             for v in $required; do
               eval "val=\${$v-}"
               if [ -z "${val+x}" ]; then
-                echo "$v: <unset>"
+                echo "REQ:$v=<unset>"
                 missing="$missing $v"
               else
-                len=$(printf '%s' "$val" | wc -c | tr -d ' ')
-                echo "$v: set (len=$len)"
-                if [ -z "$val" ]; then
-                  echo "$v: <empty>"
-                  missing="$missing $v"
-                fi
+                l=$(printf '%s' "$val" | wc -c | tr -d ' ')
+                echo "REQ:$v=len($l)"
+                [ -z "$val" ] && missing="$missing $v"
               fi
             done
 
@@ -233,7 +225,9 @@ jobs:
               echo "::error::Missing/empty env vars:$missing"
               exit 1
             fi
+            echo "TRACE:8 env check passed"
 
+            # .env 파일 생성 (CRLF 제거)
             ENV_FILE="$DIR/.env"
             rm -f "$ENV_FILE"
             {
@@ -246,79 +240,4 @@ jobs:
                 echo "MAIN_JWT_SECRET=$MAIN_JWT_SECRET"
                 echo "MAIN_JWT_ISSUER=$MAIN_JWT_ISSUER"
                 echo "MAIN_REDIS_HOST=$MAIN_REDIS_HOST"
-                echo "MAIN_REDIS_PORT=$MAIN_REDIS_PORT"
-                echo "MAIN_REDIS_PASSWORD=$MAIN_REDIS_PASSWORD"
-                echo "MAIN_STORAGE_BASE=$MAIN_STORAGE_BASE"
-              else
-                echo "TEST_DB_URL=$TEST_DB_URL"
-                echo "TEST_DB_USER=$TEST_DB_USER"
-                echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD"
-                echo "TEST_JWT_SECRET=$TEST_JWT_SECRET"
-                echo "TEST_JWT_ISSUER=$TEST_JWT_ISSUER"
-                echo "TEST_REDIS_HOST=$TEST_REDIS_HOST"
-                echo "TEST_REDIS_PORT=$TEST_REDIS_PORT"
-                echo "TEST_REDIS_PASSWORD=$TEST_REDIS_PASSWORD"
-                echo "TEST_STORAGE_BASE=$TEST_STORAGE_BASE"
-              fi
-              echo "ADMIN_NUMBER=$ADMIN_NUMBER"
-              echo "ADMIN_NAME=$ADMIN_NAME"
-              echo "ADMIN_PASSWORD=$ADMIN_PASSWORD"
-            } > "$ENV_FILE"
-            # Normalize CRLF -> LF
-            tr -d '\r' < "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
-
-            echo "== .env head =="
-            head -n 20 "$ENV_FILE" | sed 's/=.*/=<masked>/'
-
-            echo "== validate env-file inside container =="
-            docker run --rm --env-file "$ENV_FILE" alpine:3 /bin/sh -c 'echo OK && [ -n "$SPRING_PROFILES_ACTIVE" ]'
-
-            echo "▶ Stop & remove old container if exists"
-            docker stop "$APP" 2>/dev/null || true
-            docker rm "$APP" 2>/dev/null || true
-
-            echo "▶ Ensure host port $PORT is free"
-            ss -ltnp | grep -E ":$PORT " || true
-            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' | sed -n '1,200p' || true
-            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
-              | awk -v p=":$PORT->" '$0 ~ p {print $1}' \
-              | xargs -r docker stop || true
-
-            echo "▶ Build runtime image (plain progress)"
-            DOCKER_BUILDKIT=1 docker build --progress=plain -t "$APP:latest" -f "$DIR/Dockerfile" "$DIR"
-
-            echo "▶ Determine add-host option"
-            if docker run --help 2>&1 | grep -q 'host-gateway'; then
-              ADDHOST="--add-host=host.docker.internal:host-gateway"
-            else
-              GW_IP="$(ip route | awk '/default/ {print $3; exit}')"
-              if [ -n "$GW_IP" ]; then ADDHOST="--add-host=host.docker.internal:$GW_IP"; else ADDHOST=""; fi
-            fi
-            echo "ADDHOST='$ADDHOST'"
-
-            echo "▶ Run container (PORT=$PORT)"
-            RUN_STDERR="$( docker run -d \
-                --name "$APP" \
-                --restart unless-stopped \
-                --env-file "$ENV_FILE" \
-                $ADDHOST \
-                -p "$PORT:8080" \
-                "$APP:latest" 2>&1 || true )"
-
-            # Check if container actually started
-            if ! docker ps --format '{{.Names}}' | grep -qx "$APP"; then
-              echo "❌ docker run failed"
-              echo "---- docker run stderr ----"
-              printf '%s\n' "$RUN_STDERR"
-              echo "---- docker ps -a ----"; docker ps -a || true
-              echo "---- port listeners ----"; ss -ltnp | grep -E ":$PORT |:8080 " || true
-              echo "---- docker events(45s) ----"; docker events --since 45s --until 0s || true
-              echo "---- image history ----"; docker history "$APP:latest" || true
-              echo "---- last 120 lines of logs (if any) ----"; docker logs --tail=120 "$APP" || true
-              exit 1
-            fi
-
-            echo "▶ Container started:"
-            docker ps --filter "name=$APP"
-            echo "▶ Last 80 log lines:"
-            docker logs --tail=80 "$APP" || true
+                echo "MAIN_REDIS_PORT=$MAIN_REDIS_POR
