@@ -2,7 +2,7 @@ name: CI & CD
 
 on:
   push:
-    branches: [ main, test ]
+    branches: [main, test]
 
 env:
   JAVA_VERSION: '21'
@@ -38,7 +38,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -55,15 +55,20 @@ jobs:
 
       - name: Prepare artifact
         run: |
+          set -eo pipefail
           JAR=$(find . -type f -path "*/build/libs/*.jar" | head -n 1)
           [[ -z "$JAR" ]] && { echo "❌ bootJar not found"; exit 1; }
           cp "$JAR" app.jar
-          ls -lh app.jar
+          echo "== artifact =="
+          ls -l "$JAR" app.jar || true
+          sha256sum app.jar || true
 
       - name: Select environment (main/test) & export variables
         shell: bash
         run: |
+          set -eo pipefail
           BRANCH="${GITHUB_REF##*/}"
+          echo "BRANCH=$BRANCH"
           if [[ "$BRANCH" == "main" ]]; then
             echo "APP=ampm-backend-main"                                  >> $GITHUB_ENV
             echo "PROFILE=main"                                            >> $GITHUB_ENV
@@ -107,9 +112,10 @@ jobs:
           echo "ADMIN_NAME=${{ secrets.ADMIN_NAME }}"                      >> $GITHUB_ENV
           echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}"              >> $GITHUB_ENV
 
-      - name: Sanitize HOST & DIR & PORT
+      - name: Sanitize HOST/DIR/PORT & print summary
         shell: bash
         run: |
+          set -eo pipefail
           echo "HOST=$(printf '%s' "${HOST}" | tr -d '\r' | xargs)"  >> $GITHUB_ENV
           echo "DIR=$(printf '%s' "${DIR}"  | tr -d '\r' | xargs)"   >> $GITHUB_ENV
           CLEAN_PORT="$(printf '%s' "${PORT}" | tr -d '\r' | xargs)"
@@ -117,6 +123,10 @@ jobs:
             echo "::error::Invalid PORT value: '${PORT}'"; exit 1;
           fi
           echo "PORT=${CLEAN_PORT}" >> $GITHUB_ENV
+          echo "== env summary (masked) =="
+          for v in APP PROFILE HOST SSH_PORT USER DIR PORT; do
+            val="${!v}"; echo "$v: '${val:0:2}***' (len=${#val})"
+          done
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.0.3
@@ -127,8 +137,12 @@ jobs:
           port: ${{ env.SSH_PORT }}
           script_stop: true
           envs: DIR
+          debug: true
           script: |
+            set -eo pipefail
+            echo "== remote mkdir -p ${DIR} =="
             mkdir -p "${DIR}"
+            echo "== remote ls -la ${DIR} (after mkdir) ==" && ls -la "${DIR}" || true
 
       - name: Copy artifacts to server
         uses: appleboy/scp-action@v0.1.7
@@ -140,8 +154,9 @@ jobs:
           source: "app.jar,Dockerfile"
           target: "${{ env.DIR }}/"
           overwrite: true
+          debug: true
 
-      - name: Deploy on server (Docker build & run)
+      - name: Deploy on server (Docker build & run) - DEBUG
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.HOST }}
@@ -149,12 +164,30 @@ jobs:
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
           script_stop: true
+          debug: true
           envs: APP,PROFILE,PORT,DIR,MAIN_DB_URL,MAIN_DB_USER,MAIN_DB_PASSWORD,MAIN_JWT_SECRET,MAIN_JWT_ISSUER,MAIN_REDIS_HOST,MAIN_REDIS_PORT,MAIN_REDIS_PASSWORD,MAIN_STORAGE_BASE,TEST_DB_URL,TEST_DB_USER,TEST_DB_PASSWORD,TEST_JWT_SECRET,TEST_JWT_ISSUER,TEST_REDIS_HOST,TEST_REDIS_PORT,TEST_REDIS_PASSWORD,TEST_STORAGE_BASE,ADMIN_NUMBER,ADMIN_NAME,ADMIN_PASSWORD
           script: |
             set -eo pipefail
 
-            mkdir -p "${DIR}"
+            # --- System & Docker diagnostics ---
+            echo "== uname -a ==" && uname -a || true
+            echo "== /etc/os-release ==" && cat /etc/os-release || true
+            echo "== ip route =="
+            ip route || true
+            echo "== free -h ==" && free -h || true
+            echo "== df -h / ==" && df -h / || true
+            echo "== docker version ==" && docker version || true
+            echo "== docker info (short) ==" && docker info --format '{{json .ServerVersion}}, {{json .Driver}}, {{json .OperatingSystem}}' || docker info || true
 
+            # 디렉터리/파일 확인
+            echo "== check directory & files =="
+            ls -la "${DIR}" || true
+            test -f "${DIR}/Dockerfile" && echo "Dockerfile OK" || { echo "::error::Dockerfile missing at ${DIR}/Dockerfile"; exit 1; }
+            test -f "${DIR}/app.jar" && echo "app.jar OK" || { echo "::error::app.jar missing at ${DIR}/app.jar"; exit 1; }
+
+            # --- 필수 변수 검증 ---
+            mask_print() { v="$1"; if [ -z "${!v+x}" ]; then echo "$v: <unset>"; else echo "$v: set(len=${#v})"; fi; }
+            echo "== required vars check (presence only) =="
             missing=()
             required_common="APP PROFILE PORT DIR ADMIN_NUMBER ADMIN_NAME ADMIN_PASSWORD"
             if [ "${PROFILE}" = "main" ]; then
@@ -169,6 +202,7 @@ jobs:
               echo "::error::Missing env vars: ${missing[*]}"; exit 1;
             fi
 
+            # .env 작성 (LF 정규화)
             ENV_FILE="${DIR}/.env"
             rm -f "${ENV_FILE}"
             {
@@ -199,39 +233,64 @@ jobs:
               echo "ADMIN_NAME=${ADMIN_NAME}"
               echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}"
             } > "${ENV_FILE}"
+            sed -i 's/\r$//' "${ENV_FILE}" 2>/dev/null || true
+
+            echo "== .env head =="
+            head -n 20 "${ENV_FILE}" | sed 's/=.*/=<masked>/' || true
+
+            echo "== validate env-file inside container =="
+            docker run --rm --env-file "${ENV_FILE}" alpine:3 /bin/sh -c 'echo OK && echo $SPRING_PROFILES_ACTIVE && [ -n "$SPRING_PROFILES_ACTIVE" ] && exit 0 || exit 1'
 
             echo "▶ Stop & remove old container if exists"
             docker stop "${APP}" 2>/dev/null || true
             docker rm "${APP}" 2>/dev/null || true
 
-            echo "▶ Check port ${PORT} usage"
-            if ss -ltnp | grep -q ":${PORT} "; then
-              echo "⚠ Port ${PORT} is busy on host:"
-              ss -ltnp | grep ":${PORT} " || true
-              echo "→ Trying to stop containers publishing ${PORT}..."
-              docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
+            echo "▶ Ensure host port ${PORT} is free"
+            ss -ltnp | egrep ":${PORT} " || true
+            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' | sed -n '1,200p' || true
+            # 포트 점유 컨테이너 중지
+            docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
               | awk -v p=":${PORT}->" '$0 ~ p {print $1}' \
               | xargs -r docker stop || true
+
+            echo "▶ Build runtime image (plain progress)"
+            DOCKER_BUILDKIT=1 docker build --progress=plain -t "${APP}:latest" -f "${DIR}/Dockerfile" "${DIR}"
+
+            echo "▶ Determine add-host option"
+            if docker run --help 2>&1 | grep -q 'host-gateway'; then
+              ADDHOST="--add-host=host.docker.internal:host-gateway"
+            else
+              GW_IP="$(ip route | awk '/default/ {print $3; exit}')"
+              [ -n "${GW_IP}" ] && ADDHOST="--add-host=host.docker.internal:${GW_IP}" || ADDHOST=""
+            fi
+            echo "ADDHOST='${ADDHOST}'"
+
+            echo "▶ Run container (PORT=${PORT})"
+            set +e
+            RUN_STDERR="$(
+              docker run -d \
+                --name "${APP}" \
+                --restart unless-stopped \
+                --env-file "${ENV_FILE}" \
+                ${ADDHOST} \
+                -p "${PORT}:8080" \
+                "${APP}:latest" 2>&1
+            )"
+            RC=$?
+            set -e
+            if [ $RC -ne 0 ]; then
+              echo "❌ docker run failed (rc=${RC})"
+              echo "---- docker run stderr ----"
+              printf '%s\n' "${RUN_STDERR}"
+              echo "---- docker ps -a ----"; docker ps -a || true
+              echo "---- port listeners ----"; ss -ltnp | egrep ":${PORT} |:8080 " || true
+              echo "---- docker events(45s) ----"; docker events --since 45s --until 0s || true
+              echo "---- image history ----"; docker history "${APP}:latest" || true
+              echo "---- last 120 lines of logs (if any) ----"; docker logs --tail=120 "${APP}" || true
+              exit ${RC}
             fi
 
-            echo "▶ Build runtime image (no cd)"
-            docker build -t "${APP}:latest" -f "${DIR}/Dockerfile" "${DIR}"
-
-            echo "▶ Run container on port ${PORT}"
-            set -x
-            docker run -d \
-              --name "${APP}" \
-              --restart unless-stopped \
-              --env-file "${ENV_FILE}" \
-              --add-host=host.docker.internal:host-gateway \
-              -p "${PORT}:8080" \
-              "${APP}:latest" \
-            || { rc=$?; set +x;
-                 echo "❌ docker run failed (rc=${rc})"
-                 echo "== docker ps -a =="; docker ps -a || true
-                 echo "== port listeners =="; ss -ltnp | grep ":${PORT} " || true
-                 echo "== recent docker events =="; docker events --since 30s --until 0s || true
-                 echo "== image history =="; docker history "${APP}:latest" || true
-                 echo "== last 100 lines of container logs (if any) =="; docker logs --tail=100 "${APP}" || true
-                 exit ${rc}; }
-            set +x
+            echo "▶ Container started:"
+            docker ps --filter "name=${APP}"
+            echo "▶ Last 80 log lines:"
+            docker logs --tail=80 "${APP}" || true
