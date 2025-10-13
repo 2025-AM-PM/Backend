@@ -12,9 +12,7 @@ public class ExhibitSummaryResponse {
     private Long id;
     private String studentName;
     private String title;
-    private String exhibitUrl;
     private Integer likes;
-    private String thumbnailUrl;
     private LocalDateTime createdAt;
 
     public static ExhibitSummaryResponse from(Exhibit exhibit) {
@@ -22,9 +20,7 @@ public class ExhibitSummaryResponse {
                 .id(exhibit.getId())
                 .studentName(exhibit.getStudentName())
                 .title(exhibit.getTitle())
-                .exhibitUrl(exhibit.getExhibitUrl())
                 .likes(exhibit.getLikes())
-                .thumbnailUrl(exhibit.getThumbnailPath())
                 .createdAt(exhibit.getCreatedAt())
                 .build();
     }
