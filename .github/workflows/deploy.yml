@@ -33,8 +33,11 @@ jobs:
               echo "APP=ampm-backend-main"
               echo "PROFILE=main"
               echo "NET=ampm-main-net"
-              echo "DB_NAME=ampm_main"
-              echo "DB_HOST=postgresql-main"
+
+              # DB URL을 시크릿에서 바로 사용
+              echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
+              echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
 
               echo "HOST=${{ secrets.MAIN_BACKEND_SSH_HOST }}"
               echo "SSH_PORT=${{ secrets.MAIN_BACKEND_SSH_PORT }}"
@@ -42,19 +45,25 @@ jobs:
               echo "PASSWORD=${{ secrets.MAIN_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.MAIN_BACKEND_DIR }}"
               echo "PORT=${{ secrets.MAIN_BACKEND_API_PORT }}"
-              echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
-              echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
+
               echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
               echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
+
+              # 관리자 계정(있다면 시크릿 추가 권장)
+              echo "ADMIN_NUMBER=${{ secrets.MAIN_ADMIN_NUMBER }}"
+              echo "ADMIN_NAME=${{ secrets.MAIN_ADMIN_NAME }}"
+              echo "ADMIN_PASSWORD=${{ secrets.MAIN_ADMIN_PASSWORD }}"
             } >> $GITHUB_ENV
           else
             {
               echo "APP=ampm-backend-test"
               echo "PROFILE=test"
               echo "NET=ampm-test-net"
-              echo "DB_NAME=ampm_test"
-              echo "DB_HOST=postgresql-test"
+
+              echo "DB_URL=${{ secrets.TEST_DB_URL }}"
+              echo "DB_USER=${{ secrets.TEST_DB_USER }}"
+              echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
 
               echo "HOST=${{ secrets.TEST_BACKEND_SSH_HOST }}"
               echo "SSH_PORT=${{ secrets.TEST_BACKEND_SSH_PORT }}"
@@ -62,11 +71,14 @@ jobs:
               echo "PASSWORD=${{ secrets.TEST_BACKEND_SSH_PASSWORD }}"
               echo "DIR=${{ secrets.TEST_BACKEND_DIR }}"
               echo "PORT=${{ secrets.TEST_BACKEND_API_PORT }}"
-              echo "DB_USER=${{ secrets.TEST_DB_USER }}"
-              echo "DB_PASSWORD=${{ secrets.TEST_DB_PASSWORD }}"
+
               echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
               echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
+
+              echo "ADMIN_NUMBER=${{ secrets.TEST_ADMIN_NUMBER }}"
+              echo "ADMIN_NAME=${{ secrets.TEST_ADMIN_NAME }}"
+              echo "ADMIN_PASSWORD=${{ secrets.TEST_ADMIN_PASSWORD }}"
             } >> $GITHUB_ENV
           fi
 
@@ -102,12 +114,15 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
+          # 원격 서버에서 수행
           script: |
             set -euo pipefail
             cd "${{ env.DIR }}"
 
+            # 네트워크 보장
             docker network inspect "${{ env.NET }}" >/dev/null 2>&1 || docker network create "${{ env.NET }}"
 
+            # 브랜치별 .env 작성
             if [ "${{ env.PROFILE }}" = "main" ]; then
               cat > .env <<'EOF'
             TZ=Asia/Seoul
@@ -117,7 +132,7 @@ jobs:
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            MAIN_DB_URL=jdbc:postgresql://${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}?applicationName=ampm-backend-main&sslmode=disable
+            MAIN_DB_URL=${{ env.DB_URL }}
             MAIN_DB_USER=${{ env.DB_USER }}
             MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
 
@@ -135,7 +150,7 @@ jobs:
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
 
-            TEST_DB_URL=jdbc:postgresql://${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}?applicationName=ampm-backend-test&sslmode=disable
+            TEST_DB_URL=${{ env.DB_URL }}
             TEST_DB_USER=${{ env.DB_USER }}
             TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
 
@@ -146,18 +161,21 @@ jobs:
             EOF
             fi
 
+            # 기존 컨테이너 중지/삭제 후 이미지 빌드
             docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
 
+            # DB 준비 대기 (URL 그대로 사용)
             echo "Waiting for PostgreSQL to be ready..."
             ATTEMPTS=0
             until docker run --rm --network "${{ env.NET }}" postgres:16 \
-              pg_isready -h "${{ env.DB_HOST }}" -p 5432 -d "${{ env.DB_NAME }}" -q; do
+              pg_isready -d "${{ env.DB_URL }}" -q; do
               ATTEMPTS=$((ATTEMPTS+1))
               if [ $ATTEMPTS -gt 60 ]; then echo "PostgreSQL not ready"; exit 1; fi
               sleep 2
             done
 
+            # 컨테이너 기동
             docker run -d \
               --name "${{ env.APP }}" \
               --restart unless-stopped \
