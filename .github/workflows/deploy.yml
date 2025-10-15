@@ -32,7 +32,7 @@ jobs:
             {
               echo "APP=ampm-backend-main"
               echo "PROFILE=main"
-              echo "NET=ampm-main-net"
+              echo "NET=ampm"
 
               # DB URL을 시크릿에서 바로 사용
               echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
@@ -59,7 +59,7 @@ jobs:
             {
               echo "APP=ampm-backend-test"
               echo "PROFILE=test"
-              echo "NET=ampm-test-net"
+              echo "NET=ampm"
 
               echo "DB_URL=${{ secrets.TEST_DB_URL }}"
               echo "DB_USER=${{ secrets.TEST_DB_USER }}"
@@ -164,16 +164,6 @@ jobs:
             # 기존 컨테이너 중지/삭제 후 이미지 빌드
             docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
-
-            # DB 준비 대기 (URL 그대로 사용)
-            echo "Waiting for PostgreSQL to be ready..."
-            ATTEMPTS=0
-            until docker run --rm --network "${{ env.NET }}" postgres:16 \
-              pg_isready -d "${{ env.DB_URL }}" -q; do
-              ATTEMPTS=$((ATTEMPTS+1))
-              if [ $ATTEMPTS -gt 60 ]; then echo "PostgreSQL not ready"; exit 1; fi
-              sleep 2
-            done
 
             # 컨테이너 기동
             docker run -d \
