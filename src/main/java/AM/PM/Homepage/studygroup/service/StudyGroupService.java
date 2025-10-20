@@ -1,22 +1,37 @@
 package AM.PM.Homepage.studygroup.service;
 
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
-import AM.PM.Homepage.studygroup.entity.*;
+import AM.PM.Homepage.studygroup.entity.StudyGroupApplicationStatus;
+import AM.PM.Homepage.studygroup.entity.StudyGroup;
+import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
+import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
+import AM.PM.Homepage.studygroup.entity.StudyGroupRole;
+import AM.PM.Homepage.studygroup.entity.StudyGroupStatus;
 import AM.PM.Homepage.studygroup.repository.StudyGroupApplicationRepository;
 import AM.PM.Homepage.studygroup.repository.StudyGroupMemberRepository;
 import AM.PM.Homepage.studygroup.repository.StudyGroupRepository;
 import AM.PM.Homepage.studygroup.request.StudyGroupCreateRequest;
 import AM.PM.Homepage.studygroup.request.StudyGroupUpdateRequest;
-import AM.PM.Homepage.studygroup.response.*;
+import AM.PM.Homepage.studygroup.response.ApplicationApproveResponse;
+import AM.PM.Homepage.studygroup.response.MyAppliedStudyGroupResponse;
+import AM.PM.Homepage.studygroup.response.MyStudyGroupResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupApplicantResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupApplyResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupCreateResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupDetailResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupSearchResponse;
+import AM.PM.Homepage.studygroup.response.StudyGroupStatusUpdateRequest;
+import AM.PM.Homepage.studygroup.response.StudyGroupUpdateResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional
@@ -33,18 +48,18 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public Page<StudyGroupSearchResponse> getStudyGroups(String title, StudyGroupStatus status, Pageable pageable) {
         if (title == null || title.isBlank()) {
-            Page<StudyGroup> studyGroups = studyGroupRepository.findAllByStatus(status, pageable);
-            return studyGroups.map(StudyGroupSearchResponse::from);
+            return studyGroupRepository.findAllByStatus(status, pageable)
+                    .map(StudyGroupSearchResponse::from);
         }
-        Page<StudyGroup> studyGroups = studyGroupRepository.findAllByTitleContainsIgnoreCaseAndStatus(title, status, pageable);
-        return studyGroups.map(StudyGroupSearchResponse::from);
+        return studyGroupRepository.findAllByTitleContainsIgnoreCaseAndStatus(title, status, pageable)
+                .map(StudyGroupSearchResponse::from);
     }
 
     // 내 스터디 목록 조회
     @Transactional(readOnly = true)
     public List<MyStudyGroupResponse> getMyStudyGroups(Long userId) {
-        List<StudyGroup> studyGroups = studyGroupRepository.findAllByUserId(userId);
-        return studyGroups.stream()
+        return studyGroupRepository.findAllByUserId(userId)
+                .stream()
                 .map(MyStudyGroupResponse::from)
                 .toList();
     }
@@ -53,10 +68,9 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public StudyGroupDetailResponse getStudyGroupDetail(Long groupId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         List<StudyGroupMember> members = studyGroupMemberRepository.findAllByStudyGroup(studyGroup);
-
         return StudyGroupDetailResponse.from(studyGroup, members);
     }
 
@@ -64,15 +78,14 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public List<StudyGroupApplicantResponse> getApplicants(Long groupId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            log.warn("[조회 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 조회 가능");
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        List<StudyGroupApplication> applications = applicationRepository.findAllByStudyGroupId(groupId);
-        return applications.stream()
+        return applicationRepository.findAllByStudyGroupId(groupId)
+                .stream()
                 .map(StudyGroupApplicantResponse::from)
                 .toList();
     }
@@ -80,18 +93,18 @@ public class StudyGroupService {
     // 내가 지원한 스터디 조회
     @Transactional(readOnly = true)
     public List<MyAppliedStudyGroupResponse> getMyAppliedStudyGroups(Long userId) {
-        List<StudyGroupApplication> applications = applicationRepository.findAllByStudentId(userId);
-        return applications.stream()
+        return applicationRepository.findAllByStudentId(userId)
+                .stream()
                 .map(MyAppliedStudyGroupResponse::from)
                 .toList();
     }
 
     // 새로운 스터디 그룹 생성
     public StudyGroupCreateResponse createStudyGroup(StudyGroupCreateRequest request, Long userId) {
-        log.info("[스터디 생성] 요청자 ID: {}, 제목: {}", userId, request.getTitle());
+        log.info("[스터디 생성] 요청자 ID={}, 제목={}", userId, request.getTitle());
 
         Student user = studentRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 User Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
         StudyGroup studyGroup = StudyGroup.builder()
                 .title(request.getTitle())
@@ -111,120 +124,114 @@ public class StudyGroupService {
         studyGroupRepository.save(studyGroup);
         studyGroupMemberRepository.save(leader);
 
-        log.info("[스터디 생성 완료] ID: {}", studyGroup.getId());
-
+        log.info("[스터디 생성 완료] groupId={}", studyGroup.getId());
         return StudyGroupCreateResponse.from(studyGroup);
     }
 
     // 특정 스터디 지원 신청
     public StudyGroupApplyResponse applyStudyGroup(Long userId, Long groupId) {
-        log.info("[스터디 신청] 사용자 ID: {}, 스터디 그룹 ID: {}", userId, groupId);
+        log.info("[스터디 신청] userId={}, groupId={}", userId, groupId);
 
         Student applicant = studentRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 User Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         if (studyGroup.getStatus() != StudyGroupStatus.RECRUITING) {
-            log.warn("[스터디 모집 마감] 스터디 그룹 ID: {}", groupId);
-            throw new IllegalArgumentException("모집 마감된 스터디");
+            log.warn("[모집 마감] groupId={}", groupId);
+            throw new CustomException(ErrorCode.CLOSED_STUDY_GROUP);
         }
 
         if (studyGroupMemberRepository.existsByStudentAndStudyGroup(applicant, studyGroup)) {
-            log.warn("[이미 가입된 스터디] 사용자 ID: {}, 스터디 그룹 ID: {}", userId, groupId);
-            throw new IllegalArgumentException("이미 가입된 스터디 그룹");
+            log.warn("[이미 가입된 스터디] userId={}, groupId={}", userId, groupId);
+            throw new CustomException(ErrorCode.ALREADY_JOINED_STUDY_GROUP);
         }
 
         if (studyGroupMemberRepository.countByStudyGroup(studyGroup) >= studyGroup.getMaxMember()) {
-            log.warn("[스터디 인원 초과] 스터디 그룹 ID: {}", groupId);
-            throw new IllegalArgumentException("스터디 최대 인원 초과");
+            log.warn("[스터디 인원 초과] groupId={}", groupId);
+            throw new CustomException(ErrorCode.FULL_STUDY_GROUP);
         }
 
         if (applicationRepository.existsByStudentAndStudyGroup(applicant, studyGroup)) {
-            log.warn("[스터디 신청 중복] 사용자 ID: {}, 스터디 그룹 ID: {}", userId, groupId);
-            throw new IllegalArgumentException("이미 지원한 스터디 그룹");
+            log.warn("[스터디 신청 중복] userId={}, groupId={}", userId, groupId);
+            throw new CustomException(ErrorCode.DUPLICATE_APPLICATION);
         }
 
         StudyGroupApplication application = StudyGroupApplication.builder()
                 .student(applicant)
                 .studyGroup(studyGroup)
-                .status(ApplicationStatus.PENDING)
+                .status(StudyGroupApplicationStatus.PENDING)
                 .build();
 
         applicationRepository.save(application);
-
-        log.info("[스터디 신청 완료] 신청 ID: {}", application.getId());
-
+        log.info("[스터디 신청 완료] applicationId={}", application.getId());
         return StudyGroupApplyResponse.from(application);
     }
 
     // 스터디 지원 승인
     public ApplicationApproveResponse approveApplication(Long groupId, Long applicationId, Long userId) {
-        log.info("[스터디 승인] 유저 ID: {}, 그룹 ID: {}, 신청 ID: {}", userId, groupId, applicationId);
+        log.info("[스터디 승인] userId={}, groupId={}, applicationId={}", userId, groupId, applicationId);
 
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
-                .orElseThrow(() -> new IllegalArgumentException("신청 정보가 그룹에 속하지 않거나 존재하지 않음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_APPLICATION));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            log.warn("[승인 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 승인 가능");
+            log.warn("[승인 실패] 리더 아님: userId={}", userId);
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        if (application.getStatus() != ApplicationStatus.PENDING) {
-            log.warn("[승인 실패] 이미 처리된 신청 ID: {}, 상태: {}", applicationId, application.getStatus());
-            throw new IllegalArgumentException("이미 처리된 신청");
+        if (application.getStatus() != StudyGroupApplicationStatus.PENDING) {
+            log.warn("[승인 실패] 이미 처리된 신청: applicationId={}, status={}", applicationId, application.getStatus());
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED_APPLICATION);
         }
 
         application.approve();
 
         Student applicant = application.getStudent();
-        StudyGroupMember studyGroupMember = StudyGroupMember.builder()
+        StudyGroupMember member = StudyGroupMember.builder()
                 .studyGroup(studyGroup)
                 .student(applicant)
                 .role(StudyGroupRole.MEMBER)
                 .build();
 
-        studyGroupMemberRepository.save(studyGroupMember);
-
-        log.info("[승인 완료] 신청 ID: {}, 멤버 추가 완료 (studentId={})", applicationId, applicant.getId());
-
+        studyGroupMemberRepository.save(member);
+        log.info("[승인 완료] applicationId={}, studentId={}", applicationId, applicant.getId());
         return ApplicationApproveResponse.from(application);
     }
 
     // 스터디 지원 거절
     public void rejectApplication(Long groupId, Long applicationId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
-                .orElseThrow(() -> new IllegalArgumentException("신청 정보가 그룹에 속하지 않거나 존재하지 않음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_APPLICATION));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            log.warn("[거절 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 거절 가능");
+            log.warn("[거절 실패] 리더 아님: userId={}", userId);
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        if (application.getStatus() != ApplicationStatus.PENDING) {
-            log.warn("[거절 실패] 이미 처리된 신청 ID: {}, 상태: {}", applicationId, application.getStatus());
-            throw new IllegalArgumentException("이미 처리된 신청");
+        if (application.getStatus() != StudyGroupApplicationStatus.PENDING) {
+            log.warn("[거절 실패] 이미 처리된 신청: applicationId={}, status={}", applicationId, application.getStatus());
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED_APPLICATION);
         }
 
         application.reject();
-        log.info("[거절 완료] 신청 ID: {} (studentId={})", applicationId, userId);
+        log.info("[거절 완료] applicationId={}, userId={}", applicationId, userId);
     }
 
     // 스터디 그룹 수정
     public StudyGroupUpdateResponse updateStudyGroup(StudyGroupUpdateRequest request, Long groupId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            log.warn("[수정 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 수정 가능");
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
         studyGroup.update(
@@ -234,35 +241,33 @@ public class StudyGroupService {
                 request.getStatus()
         );
 
+        log.info("[스터디 수정 완료] groupId={}, userId={}", groupId, userId);
         return StudyGroupUpdateResponse.from(studyGroup);
     }
 
     public StudyGroupUpdateResponse updateStudyGroupStatus(StudyGroupStatusUpdateRequest request, Long groupId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         Student user = studentRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 User Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
         if (studyGroup.isNotLeader(user)) {
-            log.warn("[상태 수정 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 상태 수정 가능");
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
         studyGroup.setStatus(request.getStatus());
-        log.info("[모집 상태 변경] groupId={}, userId={}, 상태={}", groupId, userId, request.getStatus());
-
+        log.info("[모집 상태 변경] groupId={}, userId={}, status={}", groupId, userId, request.getStatus());
         return StudyGroupUpdateResponse.from(studyGroup);
     }
 
     // 스터디 그룹 삭제
     public void deleteStudyGroup(Long groupId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Group Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            log.warn("[삭제 실패] 리더 아님: {}", userId);
-            throw new IllegalArgumentException("StudyGroup 리더만 삭제 가능");
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
         studyGroupRepository.delete(studyGroup);
@@ -272,51 +277,50 @@ public class StudyGroupService {
     // 스터디 지원 취소
     public void deleteStudyGroupApplication(Long groupId, Long applicationId, Long userId) {
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
-                .orElseThrow(() -> new IllegalArgumentException("신청 정보가 그룹에 속하지 않거나 존재하지 않음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_APPLICATION));
 
         if (!application.getStudent().getId().equals(userId)) {
-            log.warn("[취소 실패] 본인 아님: {}", userId);
-            throw new IllegalArgumentException("본인만 지원 취소 가능");
+            throw new CustomException(ErrorCode.FORBIDDEN_NOT_OWNER);
         }
 
         applicationRepository.delete(application);
-        log.info("[스터디 신청 취소] applicationId={}, groupId={}, userId={}", applicationId, groupId, userId);
+        log.info("[스터디 신청 취소 완료] applicationId={}, groupId={}, userId={}", applicationId, groupId, userId);
     }
 
     // 스터디 탈퇴
     public void leaveStudyGroup(Long groupId, Long userId) {
         StudyGroupMember member = studyGroupMemberRepository.findByStudyGroupIdAndStudentId(groupId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         if (member.getRole() == StudyGroupRole.LEADER) {
-            log.warn("[스터디 탈퇴 실패] 리더는 탈퇴 불가: groupId={}, userId={}", groupId, userId);
-            throw new IllegalArgumentException("스터디 리더는 탈퇴할 수 없습니다. 삭제를 사용하세요.");
+            throw new CustomException(ErrorCode.LEADER_CANNOT_LEAVE);
         }
 
         studyGroupMemberRepository.delete(member);
-        log.info("[스터디 탈퇴] groupId={}, userId={}", groupId, userId);
+        log.info("[스터디 탈퇴 완료] groupId={}, userId={}", groupId, userId);
     }
 
     // 스터디 멤버 강제 탈퇴
     public void removeMember(Long groupId, Long groupMemberId, Long userId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 StudyGroup Id"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         if (!studyGroup.getLeader().getStudent().getId().equals(userId)) {
-            throw new IllegalArgumentException("스터디 리더만 멤버를 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
         StudyGroupMember member = studyGroupMemberRepository.findById(groupMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버"));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         if (!member.getStudyGroup().getId().equals(groupId)) {
-            throw new IllegalArgumentException("소속되지 않은 멤버입니다.");
+            throw new CustomException(ErrorCode.NOT_BELONG_TO_GROUP);
         }
 
         if (member.getId().equals(studyGroup.getLeader().getId())) {
-            throw new IllegalArgumentException("리더는 삭제할 수 없습니다.");
+            throw new CustomException(ErrorCode.LEADER_CANNOT_BE_REMOVED);
         }
 
         studyGroupMemberRepository.delete(member);
+        log.info("[멤버 강제 탈퇴 완료] groupId={}, memberId={}, userId={}", groupId, groupMemberId, userId);
     }
 }

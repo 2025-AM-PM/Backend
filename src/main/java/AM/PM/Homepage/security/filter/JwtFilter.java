@@ -1,13 +1,19 @@
 package AM.PM.Homepage.security.filter;
 
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,66 +21,70 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
+    private static final String PREFIX = "Bearer ";
+
     private final JwtUtil jwtUtil;
+    private final StudentRepository studentRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
         String authorization = request.getHeader(AUTHORIZATION);
 
-        if (!parseHeaderToken(authorization)) {
+        if (!hasBearer(authorization)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authorization.split(" ")[1];
+        String token = authorization.substring(PREFIX.length());
 
         try {
-            jwtUtil.isExpired(token);
+            jwtUtil.validateToken(token);
         } catch (ExpiredJwtException e) {
-            //response body
-            sendUnauthorizedResponse(response); // server 에서 401 status code -> reissueRefreshToken
+            sendResponseWithBody(response, "access 토큰 만료됨");
+            return;
+        } catch (JwtException e) {
+            sendResponseWithBody(response, "유효하지 않은 access 토큰");
             return;
         }
 
         Long id = jwtUtil.getId(token);
-        String username = jwtUtil.getUsername(token);
-        String role = jwtUtil.getRole(token);
+        Optional<Student> studentOpt = studentRepository.findById(id);
+        if (studentOpt.isEmpty()) {
+            sendResponseWithBody(response, "찾을 수 없는 유저");
+            return;
+        }
 
-        Student student = Student.builder()
-                .id(id)
-                .studentNumber(username)
-                .studentRole(role)
-                .build();
+        Student student = studentOpt.get();
+        UserAuth principal = new UserAuth(
+                student.getId(),
+                student.getStudentNumber(),
+                student.getPassword(),
+                student.getStudentName(),
+                student.getRole()
+        );
 
-        UserAuth userAuth = new UserAuth(student);
-
-        Authentication authToken = new UsernamePasswordAuthenticationToken(userAuth, null, userAuth.getAuthorities());
+        Authentication authToken = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authToken);
 
         filterChain.doFilter(request, response);
     }
 
-    private static void sendUnauthorizedResponse(HttpServletResponse response) throws IOException {
-        PrintWriter writer = response.getWriter();
-        writer.print("access token expired");
+    private boolean hasBearer(String accessToken) {
+        return accessToken != null && accessToken.startsWith(PREFIX);
+    }
 
-        //response status code
+    private void sendResponseWithBody(HttpServletResponse response, String body) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Pragma", "no-cache");
+        response.getWriter().write(body);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
-
-    private static boolean parseHeaderToken(String accessToken) {
-        return accessToken != null && accessToken.startsWith("Bearer ");
-    }
-
-
 }

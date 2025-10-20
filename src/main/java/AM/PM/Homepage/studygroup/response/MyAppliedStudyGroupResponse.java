@@ -1,6 +1,6 @@
 package AM.PM.Homepage.studygroup.response;
 
-import AM.PM.Homepage.studygroup.entity.ApplicationStatus;
+import AM.PM.Homepage.studygroup.entity.StudyGroupApplicationStatus;
 import AM.PM.Homepage.studygroup.entity.StudyGroup;
 import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ public class MyAppliedStudyGroupResponse {
     private Long studyGroupId;
     private String title;
     private String description;
-    private ApplicationStatus status;
+    private StudyGroupApplicationStatus status;
     private String leaderName;
 
     public static MyAppliedStudyGroupResponse from(StudyGroupApplication application) {

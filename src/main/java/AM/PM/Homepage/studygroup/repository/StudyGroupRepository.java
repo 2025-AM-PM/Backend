@@ -26,4 +26,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
                 where sgm.student.id = :userId
             """)
     List<StudyGroup> findAllByUserId(Long userId);
+
+    @Query("SELECT sg FROM StudyGroup sg ORDER BY sg.createdAt DESC NULLS LAST, sg.id DESC LIMIT 5")
+    List<StudyGroup> findRecentWithLimit();
 }

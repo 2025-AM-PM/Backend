@@ -1,100 +1,113 @@
 package AM.PM.Homepage.member.student.service;
 
-import AM.PM.Homepage.member.student.domain.AlgorithmProfile;
+import AM.PM.Homepage.common.exception.CustomException;
+import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
+import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
-import AM.PM.Homepage.member.student.request.VerificationCodeRequest;
-import AM.PM.Homepage.member.student.response.SolvedAcInformationResponse;
-import AM.PM.Homepage.member.student.response.StudentInformationResponse;
+import AM.PM.Homepage.member.student.request.StudentRoleUpdateRequest;
+import AM.PM.Homepage.member.student.response.AllStudentResponse;
+import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
-import AM.PM.Homepage.member.student.response.VerificationCodeResponse;
-import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-
+@Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final AlgorithmProfileService algorithmGradeService;
     private final PasswordEncoder bCryptPasswordEncoder;
 
-    @Transactional
-    public void changeStudentPassword(Long studentId, String password) {
-        findByStudentId(studentId)
-                .setPassword(bCryptPasswordEncoder.encode(password));
-    }
+    // 비밀번호 변경
+    public void changeStudentPassword(Long studentId, PasswordChangeRequest request) {
+        log.info("[비밀번호 변경 요청] studentId={}", studentId);
 
-    public boolean checkPasswordMatch(String encodedPassword, PasswordChangeRequest passwordChangeRequest) {
-
-        if(encodedPassword.equals(passwordChangeRequest.getRawCurrentPassword())
-            && passwordChangeRequest.getNewPassword().equals(passwordChangeRequest.getNewPasswordConfirm())) {
-            return true;
+        if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
+            throw new CustomException(ErrorCode.PASSWORD_NEW_MISMATCH);
         }
 
-        throw new RuntimeException("."); // custom Exception
+        Student student = findOrThrowById(studentId);
+
+        if (!bCryptPasswordEncoder.matches(request.getRawCurrentPassword(), student.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_CURRENT_PASSWORD);
+        }
+
+        student.setPassword(bCryptPasswordEncoder.encode(request.getNewPassword()));
+        log.info("[비밀번호 변경 완료] studentId={}", studentId);
     }
 
-    public Student findByStudentNumber(String studentNumber) {
-        return studentRepository.findByStudentNumber(studentNumber).orElseThrow(EntityNotFoundException::new);
-    }
-
-    public boolean verificationStudentCode(Long studentId, VerificationCodeRequest request) {
-        VerificationCodeResponse verificationCodeResponse = algorithmGradeService.fetchSolvedBio(request.getSolvedAcNickname());
-        return Objects.equals(issueVerificationCode(studentId), verificationCodeResponse.getBio());
-    }
-
-    public String issueVerificationCode(Long studentId) {
-        return studentRepository.findVerificationCodeById(studentId);
-    }
-
-    public StudentInformationResponse showStudentInformationForTest(String solvedAcNickname, String studentNumber) {
-
-        SolvedAcInformationResponse solvedAcInformationResponse
-                = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
-
-        return StudentInformationResponse.builder()
-                .studentNumber(studentNumber)
-                .solvedAcInformationResponse(solvedAcInformationResponse)
-                .build();
-    }
-
-    @Transactional
-    public StudentInformationResponse linkAlgorithmProfileToStudent(Long studentId, String solvedAcNickname) {
-
-        Student student = studentRepository.findById(studentId).orElseThrow(EntityNotFoundException::new);
-        SolvedAcInformationResponse solvedAcInformationResponse = algorithmGradeService.fetchSolvedAcInformation(solvedAcNickname);
-        AlgorithmProfile algorithmProfile = AlgorithmProfile.from(solvedAcInformationResponse);
-
-        algorithmGradeService.registerAlgorithmGrade(algorithmProfile);
-
-        student.linkAlgorithmProfile(algorithmProfile);
-
-        return StudentInformationResponse.builder()
+    @Transactional(readOnly = true)
+    public LoginSuccessResponse loadStudentInfo(Long id) {
+        Student student = findOrThrowById(id);
+        return LoginSuccessResponse.builder()
+                .studentId(id)
+                .studentName(student.getStudentName())
                 .studentNumber(student.getStudentNumber())
-                .solvedAcInformationResponse(solvedAcInformationResponse)
+                .studentTier(student.getBaekjoonTier().getTier())
                 .build();
     }
 
-    public void registerStudent(List<StudentResponse> studentResponses) {
-        List<Student> students = Student.from(studentResponses);
-        studentRepository.saveAll(students);
+    @Transactional(readOnly = true)
+    public StudentResponse showStudentInformation(Long id) {
+        log.info("[내정보 조회] 조회 시도 studentId={}", id);
+        Student student = findOrThrowById(id);
+        return StudentResponse.from(student);
     }
 
-    public void deleteStudent(Long id) {
-        studentRepository.delete(findByStudentId(id));
+    // 전체 학생 상세정보 보기 (임원 이상)
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('STAFF', 'PRESIDENT', 'SYSTEM_ADMIN')")
+    public AllStudentResponse getStudents() {
+        log.info("[전체 학생 정보 요청]");
+        List<StudentResponse> responses = studentRepository.findAll().stream()
+                .map(StudentResponse::from)
+                .toList();
+        return new AllStudentResponse(responses, responses.size());
     }
 
-    private Student findByStudentId(Long id) {
-        return studentRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+    // 권한 수정 (관리자만 변경 가능, 관리자 권한 수정 불가)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public StudentResponse updateRole(StudentRoleUpdateRequest request, Long studentId) {
+        log.info("[학생 권한 수정 요청] studentId={}, newRole={}", studentId, request.getRole());
+        Student student = findOrThrowById(studentId);
+
+        if (student.getRole() == StudentRole.SYSTEM_ADMIN) {
+            throw new CustomException(ErrorCode.FORBIDDEN_CHANGE_ROLE, "시스템 관리자의 역할은 수정할 수 없습니다.");
+        }
+
+        student.changeRole(request.getRole());
+        log.info("[학생 권한 수정 완료] studentId={}, newRole={}", studentId, request.getRole());
+        return StudentResponse.from(student);
     }
 
+    // 학생 엔티티 삭제 (관리자만, 관리자 계정 삭제 불가)
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN')")
+    public void deleteStudent(Long studentId) {
+        log.info("[학생 삭제 요청] studentId={}", studentId);
+        Student student = findOrThrowById(studentId);
 
+        if (student.getRole() == StudentRole.SYSTEM_ADMIN) {
+            throw new CustomException(ErrorCode.FORBIDDEN, "시스템 관리자 삭제 불가");
+        }
+
+        studentRepository.delete(student);
+        log.info("[학생 삭제 완료] studentId={}", studentId);
+    }
+
+    // ----- 편의 메서드 -----
+
+    // findById.orElseThrow
+    private Student findOrThrowById(Long id) {
+        return studentRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
+    }
 }
