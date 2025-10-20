@@ -9,4 +9,6 @@ public interface ExhibitRepository extends JpaRepository<Exhibit, Long> {
 
     @Query("SELECT e FROM Exhibit e ORDER BY e.createdAt DESC NULLS LAST, e.id DESC LIMIT 5")
     List<Exhibit> findRecentWithLimit();
+
+    boolean existsByIdAndStudent_Id(Long exhibitId, Long studentId);
 }
