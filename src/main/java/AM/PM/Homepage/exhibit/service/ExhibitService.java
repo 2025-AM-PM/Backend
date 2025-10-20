@@ -47,6 +47,7 @@ public class ExhibitService {
                 .exhibitUrl(request.getExhibitUrl())
                 .student(student)
                 .build();
+        exhibitRepository.save(exhibit);
 
         return ExhibitSummaryResponse.from(exhibit);
     }
