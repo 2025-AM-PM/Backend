@@ -124,7 +124,7 @@ jobs:
 
             # 브랜치별 .env 작성
             if [ "${{ env.PROFILE }}" = "main" ]; then
-              cat > .env <<'EOF'
+              cat > .env <<EOF
             TZ=Asia/Seoul
             SPRING_PROFILES_ACTIVE=main
 
