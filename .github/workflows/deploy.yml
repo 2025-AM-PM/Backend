@@ -50,10 +50,13 @@ jobs:
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
               echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
 
-              # 관리자 계정(있다면 시크릿 추가 권장)
               echo "ADMIN_NUMBER=${{ secrets.MAIN_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.MAIN_ADMIN_NAME }}"
               echo "ADMIN_PASSWORD=${{ secrets.MAIN_ADMIN_PASSWORD }}"
+          
+              echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
             } >> $GITHUB_ENV
           else
             {
@@ -79,6 +82,10 @@ jobs:
               echo "ADMIN_NUMBER=${{ secrets.TEST_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.TEST_ADMIN_NAME }}"
               echo "ADMIN_PASSWORD=${{ secrets.TEST_ADMIN_PASSWORD }}"
+          
+              echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
+              echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
+              echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
             } >> $GITHUB_ENV
           fi
 
@@ -140,6 +147,10 @@ jobs:
             MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
             MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            
+            MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
+            MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
+            MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
             EOF
             else
               cat > .env <<'EOF'
@@ -158,6 +169,10 @@ jobs:
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
             TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            
+            TEST_REDIS_HOST=${{ env.REDIS_HOST }}
+            TEST_REDIS_PORT=${{ env.REDIS_PORT }}
+            TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
             EOF
             fi
 
