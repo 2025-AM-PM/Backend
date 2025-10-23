@@ -25,18 +25,14 @@ public class PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
 
-    public Page<PostSummaryResponse> getPostsByPage(Pageable pageable) {
-        return postRepository.findAll(pageable).map(PostSummaryResponse::from);
+    public Page<PostSummaryResponse> searchPost(String title, String createdBy, Pageable pageable) {
+        return postRepository.search(title, createdBy, pageable);
     }
 
     public PostDetailResponse getPost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST, "postId=" + postId));
         return PostDetailResponse.from(post);
-    }
-
-    public List<PostSummaryResponse> search() {
-        return null;
     }
 
     public PostSummaryResponse createPost(PostCreateRequest request, Long studentId) {
