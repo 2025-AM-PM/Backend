@@ -4,6 +4,7 @@ import AM.PM.Homepage.post.request.PostCreateRequest;
 import AM.PM.Homepage.post.request.PostUpdateRequest;
 import AM.PM.Homepage.post.response.PostDetailResponse;
 import AM.PM.Homepage.post.response.PostSummaryResponse;
+import AM.PM.Homepage.post.service.PostLikeService;
 import AM.PM.Homepage.post.service.PostService;
 import AM.PM.Homepage.security.UserAuth;
 import jakarta.validation.Valid;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
 
     private final PostService postService;
+    private final PostLikeService postLikeService;
 
     // 게시글 검색 페이지네이션
     @GetMapping
@@ -60,7 +62,15 @@ public class PostController {
         return ResponseEntity.created(URI.create("/api/posts/" + response.getId())).body(response);
     }
 
-    // TODO 구현: 좋아요 클릭. 로그인 한 유저만
+    @PostMapping("/{postId}/like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> toggleLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        postLikeService.toggleLike(postId, userAuth.getId());
+        return ResponseEntity.noContent().build();
+    }
 
     // 게시글 수정. 본인 or 관리자만
     @PutMapping("/{postId}")
