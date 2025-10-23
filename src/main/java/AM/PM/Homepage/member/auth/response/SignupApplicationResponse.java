@@ -1,7 +1,7 @@
-package AM.PM.Homepage.member.signupapplication.response;
+package AM.PM.Homepage.member.auth.response;
 
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplication;
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
+import AM.PM.Homepage.member.auth.domain.SignupApplication;
+import AM.PM.Homepage.member.auth.domain.SignupApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import java.time.LocalDateTime;

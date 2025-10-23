@@ -1,12 +1,12 @@
 package AM.PM.Homepage.security.filter;
 
+import static AM.PM.Homepage.util.constant.JwtTokenType.ACCESS_TOKEN;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,11 +31,15 @@ public class JwtFilter extends OncePerRequestFilter {
     private final StudentRepository studentRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String authorization = request.getHeader(AUTHORIZATION);
 
+        // 토큰 없으면 통과
         if (!hasBearer(authorization)) {
             filterChain.doFilter(request, response);
             return;
@@ -43,24 +47,37 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = authorization.substring(PREFIX.length());
 
+        // 액세스 토큰 검증
         try {
             jwtUtil.validateToken(token);
-        } catch (ExpiredJwtException e) {
-            sendResponseWithBody(response, "access 토큰 만료됨");
-            return;
         } catch (JwtException e) {
-            sendResponseWithBody(response, "유효하지 않은 access 토큰");
+            send401(response, "유효하지 않은 access 토큰");
             return;
         }
 
+        // 2) 카테고리 검증 (access 토큰만 허용)
+        String category = jwtUtil.getCategory(token);
+        if (!ACCESS_TOKEN.getValue().equals(category)) {
+            send401(response, "access 토큰이 아님");
+            return;
+        }
+
+        // 3) 블랙리스트(로그아웃/강제만료) 확인
+        if (jwtUtil.isBlacklistedAccess(token)) {
+            send401(response, "토큰이 철회되었습니다");
+            return;
+        }
+
+        // 4) 유저 로드
         Long id = jwtUtil.getId(token);
         Optional<Student> studentOpt = studentRepository.findById(id);
         if (studentOpt.isEmpty()) {
-            sendResponseWithBody(response, "찾을 수 없는 유저");
+            send401(response, "찾을 수 없는 유저");
             return;
         }
-
         Student student = studentOpt.get();
+
+        // 5) 시큐리티 컨텍스트 설정
         UserAuth principal = new UserAuth(
                 student.getId(),
                 student.getStudentNumber(),
@@ -68,8 +85,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 student.getStudentName(),
                 student.getRole()
         );
-
-        Authentication authToken = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        Authentication authToken =
+                new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authToken);
 
         filterChain.doFilter(request, response);
@@ -79,12 +96,13 @@ public class JwtFilter extends OncePerRequestFilter {
         return accessToken != null && accessToken.startsWith(PREFIX);
     }
 
-    private void sendResponseWithBody(HttpServletResponse response, String body) throws IOException {
+    private void send401(HttpServletResponse response, String body) throws IOException {
+        log.warn(body);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-store");
         response.setHeader("Pragma", "no-cache");
-        response.getWriter().write(body);
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write('"' + body + '"'); // 간단 JSON 문자열 응답
     }
 }

@@ -1,10 +1,10 @@
-package AM.PM.Homepage.member.signupapplication.controller;
+package AM.PM.Homepage.member.auth.controller;
 
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
-import AM.PM.Homepage.member.signupapplication.request.SignupApplicationRequest;
-import AM.PM.Homepage.member.signupapplication.response.SignupApplicationProcessResponse;
-import AM.PM.Homepage.member.signupapplication.response.SignupApplicationResponse;
-import AM.PM.Homepage.member.signupapplication.service.SignupService;
+import AM.PM.Homepage.member.auth.domain.SignupApplicationStatus;
+import AM.PM.Homepage.member.auth.request.SignupApplicationRequest;
+import AM.PM.Homepage.member.auth.response.SignupApplicationProcessResponse;
+import AM.PM.Homepage.member.auth.response.SignupApplicationResponse;
+import AM.PM.Homepage.member.auth.service.AuthService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/signup")
-public class SignupAdminController {
+public class AuthAdminController {
 
-    private final SignupService signupService;
+    private final AuthService authService;
 
     // 회원가입 신청 목록 조회
     @GetMapping
@@ -29,7 +29,7 @@ public class SignupAdminController {
     public ResponseEntity<List<SignupApplicationResponse>> getSignupApplications(
             @RequestParam SignupApplicationStatus status
     ) {
-        List<SignupApplicationResponse> response = signupService.getSignupApplications(status);
+        List<SignupApplicationResponse> response = authService.getSignupApplications(status);
         return ResponseEntity.ok(response);
     }
 
@@ -39,7 +39,7 @@ public class SignupAdminController {
     public ResponseEntity<SignupApplicationProcessResponse> approveSignup(
             @RequestBody SignupApplicationRequest request
     ) {
-        SignupApplicationProcessResponse response = signupService.approveSignup(request);
+        SignupApplicationProcessResponse response = authService.approveSignup(request);
         return ResponseEntity.ok().body(response);
     }
 
@@ -48,7 +48,7 @@ public class SignupAdminController {
     public ResponseEntity<SignupApplicationProcessResponse> rejectSignup(
             @RequestBody SignupApplicationRequest request
     ) {
-        SignupApplicationProcessResponse response = signupService.rejectSignup(request);
+        SignupApplicationProcessResponse response = authService.rejectSignup(request);
         return ResponseEntity.ok().body(response);
     }
 }

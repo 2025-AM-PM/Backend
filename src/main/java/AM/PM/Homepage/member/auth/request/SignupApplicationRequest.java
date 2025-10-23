@@ -1,4 +1,4 @@
-package AM.PM.Homepage.member.signupapplication.request;
+package AM.PM.Homepage.member.auth.request;
 
 import java.util.List;
 import lombok.Data;

@@ -8,7 +8,7 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.PasswordChangeRequest;
 import AM.PM.Homepage.member.student.request.StudentRoleUpdateRequest;
 import AM.PM.Homepage.member.student.response.AllStudentResponse;
-import AM.PM.Homepage.member.student.response.LoginSuccessResponse;
+import AM.PM.Homepage.member.auth.response.LoginSuccessResponse;
 import AM.PM.Homepage.member.student.response.StudentResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class StudentService {
         Student student = findOrThrowById(studentId);
 
         if (!bCryptPasswordEncoder.matches(request.getRawCurrentPassword(), student.getPassword())) {
-            throw new CustomException(ErrorCode.INVALID_CURRENT_PASSWORD);
+            throw new CustomException(ErrorCode.BAD_CREDENTIALS);
         }
 
         student.setPassword(bCryptPasswordEncoder.encode(request.getNewPassword()));
