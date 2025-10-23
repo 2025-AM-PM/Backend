@@ -40,6 +40,7 @@ public enum ErrorCode {
 
     // 404 Not Found
     NOT_FOUND_STUDENT("4041", "student 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
+    NOT_FOUND_POST("4042", "post를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_EXHIBIT("4042", "exhibit 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_POLL("4043", "poll 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),
     NOT_FOUND_NOTICE("4044", "notice 엔티티를 찾을 수 없음", HttpStatus.NOT_FOUND),

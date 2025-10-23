@@ -5,7 +5,7 @@ import static AM.PM.Homepage.util.constant.JwtTokenType.REFRESH_TOKEN;
 
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
-import AM.PM.Homepage.common.redis.auth.AuthRedisStore;
+import AM.PM.Homepage.common.redis.AuthRedisStore;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;

@@ -1,4 +1,4 @@
-package AM.PM.Homepage.common.redis.auth;
+package AM.PM.Homepage.common.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
