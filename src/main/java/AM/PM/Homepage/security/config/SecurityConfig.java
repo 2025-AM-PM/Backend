@@ -1,17 +1,9 @@
 package AM.PM.Homepage.security.config;
 
-import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
-import AM.PM.Homepage.member.refreshtoken.service.RefreshTokenService;
 import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.filter.JwtFilter;
-import AM.PM.Homepage.security.filter.StudentLoginFilter;
-import AM.PM.Homepage.security.handler.LoginFailureHandler;
-import AM.PM.Homepage.security.handler.LoginSuccessHandler;
-import AM.PM.Homepage.security.handler.LogoutHandlerImpl;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,13 +27,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
-    private final ObjectMapper objectMapper;
-    private final LogoutHandlerImpl logoutHandler;
     private final StudentRepository studentRepository;
-    private final RefreshTokenService refreshTokenService;
     private final CorsConfigurationSource corsConfigurationSource;
-    private final AlgorithmGradeRepository algorithmGradeRepository;
-    private final AuthenticationConfiguration authenticationConfiguration;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -51,22 +38,6 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public LoginSuccessHandler loginSuccessHandler() {
-        return new LoginSuccessHandler(jwtUtil, objectMapper, refreshTokenService, algorithmGradeRepository);
-    }
-
-    @Bean
-    public LoginFailureHandler loginFailureHandler() {
-        return new LoginFailureHandler();
-    }
-
-    @Bean
-    public StudentLoginFilter studentLoginFilter() throws Exception {
-        return new StudentLoginFilter(authenticationManager(authenticationConfiguration), loginSuccessHandler(),
-                loginFailureHandler());
     }
 
     @Bean
@@ -104,10 +75,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll());
 
         http
-                .addFilterAt(studentLoginFilter(), UsernamePasswordAuthenticationFilter.class);
-
-        http
-                .addFilterBefore(jwtFilter(), StudentLoginFilter.class);
+                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
 
         //세션 설정
         http
@@ -116,15 +84,6 @@ public class SecurityConfig {
 
         http
                 .headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin));
-
-        http
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/api/student/login")
-                        .addLogoutHandler(logoutHandler)
-                        .logoutSuccessHandler((request, response, authentication) ->
-                                response.setStatus(HttpServletResponse.SC_OK)) // 로그아웃 성공 시 200 OK 응답
-                );
 
         return http.build();
     }

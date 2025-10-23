@@ -1,4 +1,4 @@
-package AM.PM.Homepage.member.signupapplication.domain;
+package AM.PM.Homepage.member.auth.domain;
 
 public enum SignupApplicationStatus {
 
