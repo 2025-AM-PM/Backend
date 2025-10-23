@@ -19,15 +19,20 @@ public class CorsConfig {
                     "http://localhost:8080",
                     "https://frontend-phi-ten-65.vercel.app", // 테스트
                     "https://frontend-phi-ten-65.vercel.app", // 메인
-                    "https://ampm-test.duckdns.org",
-                    "https://ampm-main.duckdns.org"
+                    "https://ampmjbnu.tplinkdns.com"
             );
 
     private static final List<String> CORS_ALLOW_METHODS =
             Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
 
-    private static final List<String> CORS_ALLOW_HEADERS =
-            Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "Location");
+    private static final List<String> CORS_ALLOW_HEADERS = List.of("*");
+
+    private static final List<String> CORS_ALLOW_EXPOSED_HEADERS = Arrays.asList(
+            HttpHeaders.AUTHORIZATION,
+            HttpHeaders.SET_COOKIE,
+            HttpHeaders.LOCATION,
+            "X-Device-Id"
+    );
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -36,8 +41,7 @@ public class CorsConfig {
         conf.setAllowedOriginPatterns(CORS_ALLOW_ORIGINS);
         conf.setAllowedMethods(CORS_ALLOW_METHODS);
         conf.setAllowedHeaders(CORS_ALLOW_HEADERS);
-        conf.addExposedHeader(HttpHeaders.AUTHORIZATION);
-        conf.addExposedHeader(HttpHeaders.SET_COOKIE);
+        conf.setExposedHeaders(CORS_ALLOW_EXPOSED_HEADERS);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", conf);
         return source;

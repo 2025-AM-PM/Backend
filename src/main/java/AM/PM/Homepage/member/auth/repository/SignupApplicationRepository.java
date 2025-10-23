@@ -1,7 +1,7 @@
-package AM.PM.Homepage.member.signupapplication.repository;
+package AM.PM.Homepage.member.auth.repository;
 
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplication;
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
+import AM.PM.Homepage.member.auth.domain.SignupApplication;
+import AM.PM.Homepage.member.auth.domain.SignupApplicationStatus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

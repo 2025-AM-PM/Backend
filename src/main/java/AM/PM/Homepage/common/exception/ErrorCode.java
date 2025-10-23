@@ -19,7 +19,7 @@ public enum ErrorCode {
 
     // 401 Unauthorized
     UNAUTHORIZED("4010", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),
-    INVALID_CURRENT_PASSWORD("4011", "현재 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
+    BAD_CREDENTIALS("4011", "학번 또는 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
     REFRESH_TOKEN_REQUIRED("4012", "리프레시 토큰이 없습니다.", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED("4013", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
     INVALID_TOKEN_CATEGORY("4014", "토큰의 종류가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
@@ -68,7 +68,8 @@ public enum ErrorCode {
     FAIL_PARSE_WEEK_DATES("4222", "유효한 주중 날짜를 파싱할 수 없음", HttpStatus.UNPROCESSABLE_ENTITY),
 
     // 500 Internal Server Error
-    INTERNAL_ERROR("5000", "내부 서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+    INTERNAL_ERROR("5000", "내부 서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR)
+    ;
 
     private final String code;
     private final String message;

@@ -1,4 +1,4 @@
-package AM.PM.Homepage.member.signupapplication.domain;
+package AM.PM.Homepage.member.auth.domain;
 
 import AM.PM.Homepage.common.entity.BaseTimeEntity;
 import jakarta.persistence.Column;

@@ -1,13 +1,13 @@
-package AM.PM.Homepage.member.signupapplication.service;
+package AM.PM.Homepage.member.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplication;
-import AM.PM.Homepage.member.signupapplication.domain.SignupApplicationStatus;
-import AM.PM.Homepage.member.signupapplication.repository.SignupApplicationRepository;
-import AM.PM.Homepage.member.signupapplication.request.SignupApplicationRequest;
-import AM.PM.Homepage.member.signupapplication.response.SignupApplicationProcessResponse;
+import AM.PM.Homepage.member.auth.domain.SignupApplication;
+import AM.PM.Homepage.member.auth.domain.SignupApplicationStatus;
+import AM.PM.Homepage.member.auth.repository.SignupApplicationRepository;
+import AM.PM.Homepage.member.auth.request.SignupApplicationRequest;
+import AM.PM.Homepage.member.auth.response.SignupApplicationProcessResponse;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -19,17 +19,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
-class SignupServiceTest {
+class AuthServiceTest {
 
     @Autowired
     SignupApplicationRepository applicationRepository;
     @Autowired
-    SignupService signupService;
+    AuthService authService;
 
     @Test
     void 회원가입_요청_테스트() {
         StudentSignupRequest req = new StudentSignupRequest("123", "name", "pw");
-        signupService.signup(req);
+        authService.signup(req);
 
         List<SignupApplication> applications = applicationRepository.findAll();
 
@@ -39,12 +39,12 @@ class SignupServiceTest {
     @Test
     @WithMockUser(roles = "PRESIDENT")
     void 회원가입_관리자_승인_성공() {
-        signupService.signup(new StudentSignupRequest("123", "name1", "pw"));
+        authService.signup(new StudentSignupRequest("123", "name1", "pw"));
         SignupApplication application = applicationRepository.findAll().getFirst();
         SignupApplicationRequest req = new SignupApplicationRequest();
         req.setApplicationIds(List.of(application.getId()));
 
-        SignupApplicationProcessResponse res = signupService.approveSignup(req);
+        SignupApplicationProcessResponse res = authService.approveSignup(req);
 
         assertThat(res.getTotal()).isEqualTo(1L);
         assertThat(res.getStatus()).isEqualTo(SignupApplicationStatus.APPROVED);
@@ -53,24 +53,24 @@ class SignupServiceTest {
     @Test
     @WithMockUser(roles = "STAFF")
     void 회원가입_관리자_승인_실패() {
-        signupService.signup(new StudentSignupRequest("123", "name1", "pw"));
+        authService.signup(new StudentSignupRequest("123", "name1", "pw"));
         SignupApplication application = applicationRepository.findAll().getFirst();
         SignupApplicationRequest req = new SignupApplicationRequest();
         req.setApplicationIds(List.of(application.getId()));
 
-        assertThatThrownBy(() -> signupService.approveSignup(req)).isExactlyInstanceOf(
+        assertThatThrownBy(() -> authService.approveSignup(req)).isExactlyInstanceOf(
                 AuthorizationDeniedException.class);
     }
 
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void 회원가입_관리자_거절_성공() {
-        signupService.signup(new StudentSignupRequest("123", "name1", "pw"));
+        authService.signup(new StudentSignupRequest("123", "name1", "pw"));
         SignupApplication application = applicationRepository.findAll().getFirst();
         SignupApplicationRequest req = new SignupApplicationRequest();
         req.setApplicationIds(List.of(application.getId()));
 
-        SignupApplicationProcessResponse res = signupService.rejectSignup(req);
+        SignupApplicationProcessResponse res = authService.rejectSignup(req);
 
         assertThat(res.getTotal()).isEqualTo(1L);
         assertThat(res.getStatus()).isEqualTo(SignupApplicationStatus.REJECTED);
