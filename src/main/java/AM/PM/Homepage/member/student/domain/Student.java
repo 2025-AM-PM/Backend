@@ -2,6 +2,7 @@ package AM.PM.Homepage.member.student.domain;
 
 import AM.PM.Homepage.exhibit.entity.Exhibit;
 import AM.PM.Homepage.member.algorithmprofile.domain.AlgorithmProfile;
+import AM.PM.Homepage.post.domain.PostLike;
 import AM.PM.Homepage.studygroup.entity.StudyGroupApplication;
 import AM.PM.Homepage.studygroup.entity.StudyGroupMember;
 import jakarta.persistence.CascadeType;
@@ -17,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -57,13 +59,16 @@ public class Student {
     private AlgorithmProfile baekjoonTier;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Exhibit> exhibits;
+    private List<Exhibit> exhibits = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StudyGroupMember> studyGroupMembers;
+    private List<StudyGroupMember> studyGroupMembers = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StudyGroupApplication> studyGroupApplications;
+    private List<StudyGroupApplication> studyGroupApplications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> postLikes = new ArrayList<>();
 
     public Student(String studentNumber, StudentRole role, String studentName, String password) {
         this.studentNumber = studentNumber;
@@ -71,6 +76,10 @@ public class Student {
         this.studentName = studentName;
         this.password = password;
         this.verificationToken = issuedVerificationToken();
+    }
+
+    public Student(Long id) {
+        this.id = id;
     }
 
     public static Student signup(String studentNumber, String studentName, String encryptedPassword) {

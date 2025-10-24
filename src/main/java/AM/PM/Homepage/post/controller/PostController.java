@@ -4,11 +4,11 @@ import AM.PM.Homepage.post.request.PostCreateRequest;
 import AM.PM.Homepage.post.request.PostUpdateRequest;
 import AM.PM.Homepage.post.response.PostDetailResponse;
 import AM.PM.Homepage.post.response.PostSummaryResponse;
+import AM.PM.Homepage.post.service.PostLikeService;
 import AM.PM.Homepage.post.service.PostService;
 import AM.PM.Homepage.security.UserAuth;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,11 +31,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
 
     private final PostService postService;
+    private final PostLikeService postLikeService;
 
-    // 페이지네이션으로 게시글 가져오기
+    // 게시글 검색 페이지네이션
     @GetMapping
-    public ResponseEntity<Page<PostSummaryResponse>> getPosts(Pageable pageable) {
-        return ResponseEntity.ok(postService.getPostsByPage(pageable));
+    public ResponseEntity<Page<PostSummaryResponse>> search(
+            @RequestParam(name="title", required = false) String title,
+            @RequestParam(name="createdBy", required = false) String createdBy,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(postService.searchPost(title, createdBy, pageable));
     }
 
     // 특정 게시글 id로 조회
@@ -43,14 +49,6 @@ public class PostController {
             @PathVariable Long postId
     ) {
         return ResponseEntity.ok(postService.getPost(postId));
-    }
-
-    // TODO 구현: 검색
-    @GetMapping("/search")
-    public ResponseEntity<List<PostSummaryResponse>> search(
-
-    ) {
-        return ResponseEntity.ok(postService.search());
     }
 
     // 게시글 작성. 로그인 한 유저만
@@ -64,7 +62,15 @@ public class PostController {
         return ResponseEntity.created(URI.create("/api/posts/" + response.getId())).body(response);
     }
 
-    // TODO 구현: 좋아요 클릭. 로그인 한 유저만
+    @PostMapping("/{postId}/like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> toggleLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserAuth userAuth
+    ) {
+        postLikeService.toggleLike(postId, userAuth.getId());
+        return ResponseEntity.noContent().build();
+    }
 
     // 게시글 수정. 본인 or 관리자만
     @PutMapping("/{postId}")
