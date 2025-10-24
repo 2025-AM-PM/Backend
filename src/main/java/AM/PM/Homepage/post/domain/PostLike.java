@@ -36,4 +36,9 @@ public class PostLike extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
+
+    public PostLike(Post post, Student student) {
+        this.post = post;
+        this.student = student;
+    }
 }

@@ -22,6 +22,7 @@ public class PostDetailResponse {
     private String content;
     private PostCategory category;
     private Long likes;
+    private Long views;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
@@ -34,6 +35,7 @@ public class PostDetailResponse {
                 post.getContent(),
                 post.getCategory(),
                 post.getLikes(),
+                post.getViews(),
                 post.getCreatedAt(),
                 post.getUpdatedAt(),
                 post.getCreatedBy(),
