@@ -17,11 +17,14 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -77,15 +80,21 @@ public class AuthService {
             return ResponseEntity.ok()
                     .header("Authorization", "Bearer " + accessToken)
                     .header("X-Device-Id", deviceId)
-                    .header("Set-Cookie",
-                            ResponseCookie.from("refresh", refreshToken)
-                                    .httpOnly(true).path("/")
-                                    .maxAge(jwtUtil.getRefreshTtl()).sameSite("None").build()
-                                    .toString())
+                    .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken, false, "Lax").toString())
                     .body(body);
         } catch (BadCredentialsException e) {
             throw new CustomException(ErrorCode.BAD_CREDENTIALS, "studentNumber=" + request.getStudentNumber());
         }
+    }
+
+    private ResponseCookie buildRefreshCookie(String refreshToken, boolean secure, String sameSite) {
+        return ResponseCookie.from("refresh", refreshToken)
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite(sameSite)
+                .path("/auth")
+                .maxAge(jwtUtil.getRefreshTtl())
+                .build();
     }
 
     // 회원가입 신청
