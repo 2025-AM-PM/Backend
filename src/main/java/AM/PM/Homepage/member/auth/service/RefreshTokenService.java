@@ -123,7 +123,7 @@ public class RefreshTokenService {
 
     // 단일 디바이스 로그아웃
     @Transactional
-    public void logout(Long studentId, String deviceId, String accessToken) {
+    public ResponseCookie logout(Long studentId, String deviceId, String accessToken) {
         // AT 블랙리스트(남은 TTL)
         if (accessToken != null && !accessToken.isBlank()) {
             jwtUtil.blacklistAccess(accessToken);
@@ -135,20 +135,32 @@ public class RefreshTokenService {
             log.info("[로그아웃] refresh 삭제: studentId={}, deviceId={}", studentId, deviceId);
         }
         log.info("[로그아웃] 완료");
+        return clearRefreshCookie(false, "Lax");
     }
 
     // 전체 로그아웃
     @Transactional
-    public void logoutAll(Long studentId, String accessToken) {
+    public ResponseCookie logoutAll(Long studentId, String accessToken) {
         if (accessToken != null && !accessToken.isBlank()) {
             jwtUtil.blacklistAccess(accessToken);
             String jti = jwtUtil.getJti(accessToken);
-            log.info("[전체 로그아웃] access 블랙리스트 등록 완료: jti={}", jwtUtil.getJti(accessToken));
+            log.info("[전체 로그아웃] access 블랙리스트 등록 완료: jti={}", jti);
         }
         if (studentId != null) {
             store.deleteAllRefresh(studentId);
             log.info("[전체 로그아웃] refresh 삭제: studentId={}", studentId);
         }
         log.info("[전체 로그아웃] 완료");
+        return clearRefreshCookie(false, "Lax");
+    }
+
+    private ResponseCookie clearRefreshCookie(boolean secure, String sameSite) {
+        ResponseCookie.ResponseCookieBuilder b = ResponseCookie.from(REFRESH_COOKIE, "");
+        b.httpOnly(true)
+                .secure(secure)
+                .sameSite(sameSite)
+                .path("/")
+                .maxAge(0);
+        return b.build();
     }
 }

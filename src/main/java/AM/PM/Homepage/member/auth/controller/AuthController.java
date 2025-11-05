@@ -59,18 +59,10 @@ public class AuthController {
         final Long studentId = (principal != null) ? principal.getId() : null;
         final String accessToken = extractBearer(authorization);
 
-        refreshTokenService.logout(studentId, deviceId, accessToken);
-
-        ResponseCookie delete = ResponseCookie.from(REFRESH_COOKIE, "")
-                .httpOnly(true)
-//                .secure(true)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(0)
-                .build();
+        ResponseCookie cookie = refreshTokenService.logout(studentId, deviceId, accessToken);
 
         return ResponseEntity.noContent()
-                .header("Set-Cookie", delete.toString())
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .build();
     }
 
@@ -83,13 +75,10 @@ public class AuthController {
         final Long studentId = (principal != null) ? principal.getId() : null;
         final String accessToken = extractBearer(authorization);
 
-        refreshTokenService.logoutAll(studentId, accessToken);
-
-        ResponseCookie delete = ResponseCookie.from(REFRESH_COOKIE, "")
-                .httpOnly(true).secure(true).sameSite("Strict").path("/").maxAge(0).build();
+        ResponseCookie cookie = refreshTokenService.logoutAll(studentId, accessToken);
 
         return ResponseEntity.noContent()
-                .header("Set-Cookie", delete.toString())
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .build();
     }
 
