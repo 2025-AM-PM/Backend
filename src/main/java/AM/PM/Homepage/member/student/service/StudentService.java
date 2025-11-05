@@ -2,6 +2,7 @@ package AM.PM.Homepage.member.student.service;
 
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
+import AM.PM.Homepage.member.algorithmprofile.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
@@ -48,11 +49,12 @@ public class StudentService {
     @Transactional(readOnly = true)
     public LoginSuccessResponse loadStudentInfo(Long id) {
         Student student = findOrThrowById(id);
+        AlgorithmProfile baekjoonTier = student.getBaekjoonTier();
         return LoginSuccessResponse.builder()
                 .studentId(id)
                 .studentName(student.getStudentName())
                 .studentNumber(student.getStudentNumber())
-                .studentTier(student.getBaekjoonTier().getTier())
+                .studentTier(baekjoonTier != null ? baekjoonTier.getTier() : null)
                 .build();
     }
 
