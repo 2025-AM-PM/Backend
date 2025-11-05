@@ -92,7 +92,7 @@ public class AuthService {
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite(sameSite)
-                .path("/auth")
+                .path("/")
                 .maxAge(jwtUtil.getRefreshTtl())
                 .build();
     }
