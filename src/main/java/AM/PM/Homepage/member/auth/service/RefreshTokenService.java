@@ -1,10 +1,9 @@
 package AM.PM.Homepage.member.auth.service;
 
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.common.redis.AuthRedisStore;
+import AM.PM.Homepage.member.auth.response.ReissueResult;
 import AM.PM.Homepage.member.student.domain.StudentRole;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
@@ -17,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +43,7 @@ public class RefreshTokenService {
      * 액세스 재발급(회전) - RT(쿠키)만으로 처리 - 저장된 (studentId, deviceId) 해시와 일치해야 함 - 회전: 기존 RT 삭제 → 새 RT 저장
      */
     @Transactional
-    public void reissue(HttpServletRequest request, HttpServletResponse response) {
+    public ReissueResult reissue(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = extractRefreshToken(request.getCookies());
 
         // 만료/카테고리 체크
@@ -91,9 +91,19 @@ public class RefreshTokenService {
         registerRefreshToken(studentId, deviceId, newRefresh);
 
         // 응답 세팅
-        response.setHeader(AUTHORIZATION, "Bearer " + newAccess);
-        response.addCookie(provider.createCookie(REFRESH_COOKIE, newRefresh));
+        ResponseCookie cookie = buildRefreshCookie(newRefresh, false, "Lax");
         log.info("[재발급 완료] studentId={}, deviceId={}", studentId, deviceId);
+        return new ReissueResult(newAccess, cookie, deviceId);
+    }
+
+    private ResponseCookie buildRefreshCookie(String refreshToken, boolean secure, String sameSite) {
+        return ResponseCookie.from("refresh", refreshToken)
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite(sameSite)
+                .path("/")
+                .maxAge(jwtUtil.getRefreshTtl())
+                .build();
     }
 
     private String extractRefreshToken(Cookie[] cookies) {
