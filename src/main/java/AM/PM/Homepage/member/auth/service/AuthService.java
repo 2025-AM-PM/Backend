@@ -17,13 +17,11 @@ import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
 import AM.PM.Homepage.security.UserAuth;
 import AM.PM.Homepage.security.jwt.JwtUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -64,7 +62,9 @@ public class AuthService {
             StudentRole role = principal.getRole();
             Integer algorithmTier = algorithmGradeRepository.findTierByStudentId(studentId).orElse(null);
 
-            if (deviceId == null || deviceId.isBlank()) deviceId = UUID.randomUUID().toString();
+            if (deviceId == null || deviceId.isBlank()) {
+                deviceId = UUID.randomUUID().toString();
+            }
 
             String accessToken = jwtUtil.generateAccessToken(studentId, studentNumber, role);
             String refreshToken = jwtUtil.generateRefreshToken(studentId, studentNumber, role, deviceId);
@@ -72,16 +72,17 @@ public class AuthService {
             // 리프레시 저장(회전 대비)
             refreshTokenService.registerRefreshToken(studentId, deviceId, refreshToken);
 
-            LoginSuccessResponse body = new LoginSuccessResponse(
+            LoginSuccessResponse response = new LoginSuccessResponse(
                     studentId, studentNumber, studentName, role.name(), algorithmTier
             );
 
             log.info("로그인 성공: studentId={}", studentId);
+
             return ResponseEntity.ok()
                     .header("Authorization", "Bearer " + accessToken)
                     .header("X-Device-Id", deviceId)
                     .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken, false, "Lax").toString())
-                    .body(body);
+                    .body(response);
         } catch (BadCredentialsException e) {
             throw new CustomException(ErrorCode.BAD_CREDENTIALS, "studentNumber=" + request.getStudentNumber());
         }

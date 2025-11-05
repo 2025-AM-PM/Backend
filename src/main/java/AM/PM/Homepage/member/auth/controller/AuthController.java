@@ -2,6 +2,7 @@ package AM.PM.Homepage.member.auth.controller;
 
 import AM.PM.Homepage.member.auth.request.LoginRequest;
 import AM.PM.Homepage.member.auth.response.LoginSuccessResponse;
+import AM.PM.Homepage.member.auth.response.ReissueResult;
 import AM.PM.Homepage.member.auth.service.AuthService;
 import AM.PM.Homepage.member.auth.service.RefreshTokenService;
 import AM.PM.Homepage.member.student.request.StudentSignupRequest;
@@ -15,7 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -91,12 +96,18 @@ public class AuthController {
     // access 토큰 재발급
     @PostMapping("/reissue")
     public ResponseEntity<Void> reissue(HttpServletRequest request, HttpServletResponse response) {
-        refreshTokenService.reissue(request, response);
-        return ResponseEntity.ok().build();
+        ReissueResult reissueResult = refreshTokenService.reissue(request, response);
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + reissueResult.getAccessToken())
+                .header("X-Device-Id", reissueResult.getDeviceId())
+                .header(HttpHeaders.SET_COOKIE, reissueResult.getRefreshCookie().toString())
+                .build();
     }
 
     private String extractBearer(String authorization) {
-        if (authorization == null) return null;
+        if (authorization == null) {
+            return null;
+        }
         return authorization.startsWith(BEARER_PREFIX) ? authorization.substring(BEARER_PREFIX.length()) : null;
     }
 }
