@@ -1,12 +1,17 @@
-package AM.PM.Homepage.common.file;
+package AM.PM.Homepage.file.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @Transactional
 public class FileService {
+
+    @Value("${app.storage.secret-key}")
+    private String secretKey;
+    private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     public String storeFileToPath(MultipartFile file, String uploadPath) throws FileUploadException {
         validateUploadPath(uploadPath);
@@ -72,6 +81,19 @@ public class FileService {
     private static String generateUniqueFilename(String originalName) {
         String sanitized = originalName.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
         return UUID.randomUUID() + "_" + sanitized;
+    }
+
+    public String generateSignature(String httpMethod, Long fileId, long expires) {
+
+        String messageToSign = httpMethod + "\n" + fileId + "\n" + expires;
+        try {
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            mac.init(new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
+            byte[] signatureBytes = mac.doFinal(messageToSign.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("서명 생성에 실패했습니다.", e);
+        }
     }
 }
 
