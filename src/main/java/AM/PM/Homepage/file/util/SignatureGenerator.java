@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SignatureGenerator {
-    @Value("${app.storage.secret-key}")
+//    @Value("${app.storage.secret-key}")
     private String secretKey;
     private static final String HMAC_ALGORITHM = "HmacSHA256"; //
 
