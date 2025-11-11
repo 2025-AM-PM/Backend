@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional
 public class FileService {
 
-    @Value("${app.storage.secret-key}")
+//    @Value("${app.storage.secret-key}")
     private String secretKey;
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
