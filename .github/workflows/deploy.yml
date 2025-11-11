@@ -48,7 +48,7 @@ jobs:
 
               echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
-#              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
+              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
 
               echo "ADMIN_NUMBER=${{ secrets.MAIN_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.MAIN_ADMIN_NAME }}"
@@ -77,7 +77,7 @@ jobs:
 
               echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
-#              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
+              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
 
               echo "ADMIN_NUMBER=${{ secrets.TEST_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.TEST_ADMIN_NAME }}"
@@ -102,7 +102,7 @@ jobs:
           port: ${{ env.SSH_PORT }}
           script: |
             mkdir -p "${{ env.DIR }}"
-#            mkdir -p "${{ env.STORAGE_BASE }}"
+            mkdir -p "${{ env.STORAGE_BASE }}"
 
       - name: Copy app.jar & Dockerfile
         uses: appleboy/scp-action@v0.1.7
@@ -146,7 +146,7 @@ jobs:
             MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
             MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
-#            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
             
             MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
             MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
@@ -168,7 +168,7 @@ jobs:
             TEST_JWT_SECRET=${{ env.JWT_SECRET }}
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
-#            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
             
             TEST_REDIS_HOST=${{ env.REDIS_HOST }}
             TEST_REDIS_PORT=${{ env.REDIS_PORT }}
@@ -187,5 +187,5 @@ jobs:
               --env-file .env \
               --network "${{ env.NET }}" \
               -p "${{ env.PORT }}:8080" \
-#              -v "${{ env.STORAGE_BASE }}:${{ env.STORAGE_BASE }}" \
+              -v "${{ env.STORAGE_BASE }}:${{ env.STORAGE_BASE }}" \
               "${{ env.APP }}:latest"
