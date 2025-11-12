@@ -1,5 +1,6 @@
 package AM.PM.Homepage.file.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -21,8 +22,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional
 public class FileService {
 
-//    @Value("${app.storage.secret-key}")
-    private String secretKey;
+    private final String secretKey;
+
+    public FileService(@Value("${app.storage.secret-key}") String secretKey) {
+        this.secretKey = secretKey;
+    }
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
