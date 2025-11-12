@@ -17,13 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/files")
 public class FileController {
 
     private final SignatureGenerator signatureGenerator;
-    @Value("${app.storage.url}")
-    private String storageServiceBaseUrl;
+    private final String storageServiceBaseUrl;
+
+    public FileController(@Value("${app.storage.url}") String storageServiceBaseUrl, SignatureGenerator signatureGenerator) {
+        this.storageServiceBaseUrl = storageServiceBaseUrl;
+        this.signatureGenerator = signatureGenerator;
+    }
 
     /**
      * 프론트엔드에서 파일 업로드를 위한 Presigned URL을 생성하여 반환합니다.
