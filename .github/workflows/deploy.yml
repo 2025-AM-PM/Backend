@@ -57,6 +57,10 @@ jobs:
               echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
               echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
+
+              echo "APP_STORAGE_SECRET=${{ secrets.MAIN_APP_STORAGE_SECRET_KEY }}"
+              echo "APP_STORAGE_URL=${{ secrets.MAIN_STORAGE_URL }}" 
+
             } >> $GITHUB_ENV
           else
             {
@@ -86,6 +90,10 @@ jobs:
               echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
               echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
+
+              echo "APP_STORAGE_SECRET=${{ secrets.TEST_APP_STORAGE_SECRET_KEY }}"
+              echo "APP_STORAGE_URL=${{ secrets.TEST_STORAGE_URL }}"
+
             } >> $GITHUB_ENV
           fi
 
@@ -151,6 +159,9 @@ jobs:
             MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
             MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
             MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+
+            APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
+            APP_STORAGE_URL=${{ env.APP_STORAGE_URL }} # <-- 3. 추가됨
             EOF
             else
               cat > .env <<'EOF'
@@ -168,11 +179,14 @@ jobs:
             TEST_JWT_SECRET=${{ env.JWT_SECRET }}
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
 
-            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            TEST_STORAGE_BASE=${{ env.TEST_STORAGE_BASE }}
             
             TEST_REDIS_HOST=${{ env.REDIS_HOST }}
             TEST_REDIS_PORT=${{ env.REDIS_PORT }}
             TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
+
+            APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
+            APP_STORAGE_URL=${{ env.APP_STORAGE_URL }} # <-- 4. 추가됨
             EOF
             fi
 
