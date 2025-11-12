@@ -9,9 +9,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SignatureGenerator {
-    @Value("${app.storage.secret-key}")
-    private String secretKey;
-    private static final String HMAC_ALGORITHM = "HmacSHA256"; //
+
+    // 1. final로 변경
+    private final String secretKey;
+    private static final String HMAC_ALGORITHM = "HmacSHA256";
+
+    // 2. @Value를 생성자 파라미터로 이동
+    public SignatureGenerator(@Value("${app.storage.secret-key}") String secretKey) {
+        if (secretKey == null || secretKey.isBlank()) {
+            // 주입이 실패하면 즉시 앱 로딩을 멈추게 함
+            throw new IllegalArgumentException("app.storage.secret-key가 .env 파일에 없거나 비어있습니다.");
+        }
+        this.secretKey = secretKey;
+    }
 
     /**
      * StorageService API 명세와 일치하는 시그니처를 생성합니다.
@@ -29,11 +39,15 @@ public class SignatureGenerator {
         try {
             // 2. HmacSHA256 알고리즘으로 서명
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM);
+
+            // 3. (수정) 생성자에서 주입받은 secretKey 사용
+            // 이 시점에는 secretKey가 null이 아님이 100% 보장됨
+            SecretKeySpec secretKeySpec = new SecretKeySpec(this.secretKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM);
+
             mac.init(secretKeySpec);
             byte[] signatureBytes = mac.doFinal(messageToSign.getBytes(StandardCharsets.UTF_8));
 
-            // 3. Base64 URL-safe, No-Padding 인코딩
+            // 4. Base64 URL-safe, No-Padding 인코딩
             return Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
 
         } catch (Exception e) {
