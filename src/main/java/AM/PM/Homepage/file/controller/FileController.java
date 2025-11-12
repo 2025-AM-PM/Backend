@@ -22,7 +22,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class FileController {
 
     private final SignatureGenerator signatureGenerator;
-    private final String storageServiceBaseUrl = "http://localhost:6736";
+    @Value("${app.storage.url}")
+    private String storageServiceBaseUrl;
 
     /**
      * 프론트엔드에서 파일 업로드를 위한 Presigned URL을 생성하여 반환합니다.
