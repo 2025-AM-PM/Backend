@@ -22,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional
 public class FileService {
 
-    @Value("${app.storage.secret-key}")
     private final String secretKey;
 
     public FileService(@Value("${app.storage.secret-key}") String secretKey) {
