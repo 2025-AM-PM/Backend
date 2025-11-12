@@ -23,6 +23,7 @@ public class FileService {
 
 //    @Value("${app.storage.secret-key}")
     private String secretKey;
+
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     public String storeFileToPath(MultipartFile file, String uploadPath) throws FileUploadException {
