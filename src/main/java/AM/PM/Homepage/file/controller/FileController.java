@@ -23,7 +23,7 @@ public class FileController {
     private final SignatureGenerator signatureGenerator;
     private final String storageServiceBaseUrl;
 
-    public FileController(@Value("${app.storage.url}") String storageServiceBaseUrl, SignatureGenerator signatureGenerator) {
+    public FileController(@Value("${app.storage.base.url}") String storageServiceBaseUrl, SignatureGenerator signatureGenerator) {
         this.storageServiceBaseUrl = storageServiceBaseUrl;
         this.signatureGenerator = signatureGenerator;
     }
