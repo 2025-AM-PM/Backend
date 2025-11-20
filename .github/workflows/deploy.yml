@@ -32,7 +32,7 @@ jobs:
             {
               echo "APP=ampm-backend-main"
               echo "PROFILE=main"
-              echo "NET=ampm"
+              echo "NET=ampm-main"
 
               echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
               echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
@@ -64,7 +64,7 @@ jobs:
             {
               echo "APP=ampm-backend-test"
               echo "PROFILE=test"
-              echo "NET=ampm"
+              echo "NET=ampm-test"
 
               echo "DB_URL=${{ secrets.TEST_DB_URL }}"
               echo "DB_USER=${{ secrets.TEST_DB_USER }}"
