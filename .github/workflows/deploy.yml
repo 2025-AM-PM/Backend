@@ -34,7 +34,6 @@ jobs:
               echo "PROFILE=main"
               echo "NET=ampm"
 
-              # DB URL을 시크릿에서 바로 사용
               echo "DB_URL=${{ secrets.MAIN_DB_URL }}"
               echo "DB_USER=${{ secrets.MAIN_DB_USER }}"
               echo "DB_PASSWORD=${{ secrets.MAIN_DB_PASSWORD }}"
@@ -59,7 +58,7 @@ jobs:
               echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
 
               echo "APP_STORAGE_SECRET=${{ secrets.MAIN_APP_STORAGE_SECRET_KEY }}"
-              echo "APP_STORAGE_URL=${{ secrets.MAIN_STORAGE_URL }}" 
+              echo "APP_STORAGE_BASE_URL=${{ secrets.MAIN_STORAGE_URL }}"
 
             } >> $GITHUB_ENV
           else
@@ -92,7 +91,7 @@ jobs:
               echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
 
               echo "APP_STORAGE_SECRET=${{ secrets.TEST_APP_STORAGE_SECRET_KEY }}"
-              echo "APP_STORAGE_URL=${{ secrets.TEST_STORAGE_URL }}"
+              echo "APP_STORAGE_BASE_URL=${{ secrets.TEST_STORAGE_URL }}"
 
             } >> $GITHUB_ENV
           fi
@@ -129,15 +128,12 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
-          # 원격 서버에서 수행
           script: |
             set -euo pipefail
             cd "${{ env.DIR }}"
 
-            # 네트워크 보장
             docker network inspect "${{ env.NET }}" >/dev/null 2>&1 || docker network create "${{ env.NET }}"
 
-            # 브랜치별 .env 작성
             if [ "${{ env.PROFILE }}" = "main" ]; then
               cat > .env <<EOF
             TZ=Asia/Seoul
@@ -161,7 +157,7 @@ jobs:
             MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
 
             APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
-            APP_STORAGE_URL=${{ env.APP_STORAGE_URL }} # <-- 3. 추가됨
+            APP_STORAGE_BASE_URL=${{ env.APP_STORAGE_BASE_URL }}
             EOF
             else
               cat > .env <<'EOF'
@@ -186,15 +182,13 @@ jobs:
             TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
 
             APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
-            APP_STORAGE_URL=${{ env.APP_STORAGE_URL }} # <-- 4. 추가됨
+            APP_STORAGE_BASE_URL=${{ env.APP_STORAGE_BASE_URL }}
             EOF
             fi
 
-            # 기존 컨테이너 중지/삭제 후 이미지 빌드
             docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
 
-            # 컨테이너 기동
             docker run -d \
               --name "${{ env.APP }}" \
               --restart unless-stopped \
