@@ -1,4 +1,3 @@
-# .github/workflows/minimal-ci-cd.yml
 name: minimal-ci-cd
 
 on:
@@ -28,6 +27,7 @@ jobs:
         shell: bash
         run: |
           BRANCH="${GITHUB_REF##*/}"
+
           if [ "$BRANCH" = "main" ]; then
             {
               echo "APP=ampm-backend-main"
@@ -47,20 +47,19 @@ jobs:
 
               echo "JWT_SECRET=${{ secrets.MAIN_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.MAIN_JWT_ISSUER }}"
-              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
 
               echo "ADMIN_NUMBER=${{ secrets.MAIN_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.MAIN_ADMIN_NAME }}"
               echo "ADMIN_PASSWORD=${{ secrets.MAIN_ADMIN_PASSWORD }}"
-          
+
               echo "REDIS_HOST=${{ secrets.MAIN_REDIS_HOST }}"
               echo "REDIS_PORT=${{ secrets.MAIN_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.MAIN_REDIS_PASSWORD }}"
 
+              echo "STORAGE_BASE=${{ secrets.MAIN_STORAGE_BASE }}"
+              echo "STORAGE_URL=${{ secrets.MAIN_STORAGE_URL }}"
               echo "APP_STORAGE_SECRET=${{ secrets.MAIN_APP_STORAGE_SECRET_KEY }}"
-              echo "APP_STORAGE_BASE_URL=${{ secrets.MAIN_STORAGE_URL }}"
-
-            } >> $GITHUB_ENV
+            } >> "$GITHUB_ENV"
           else
             {
               echo "APP=ampm-backend-test"
@@ -80,20 +79,19 @@ jobs:
 
               echo "JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}"
               echo "JWT_ISSUER=${{ secrets.TEST_JWT_ISSUER }}"
-              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
 
               echo "ADMIN_NUMBER=${{ secrets.TEST_ADMIN_NUMBER }}"
               echo "ADMIN_NAME=${{ secrets.TEST_ADMIN_NAME }}"
               echo "ADMIN_PASSWORD=${{ secrets.TEST_ADMIN_PASSWORD }}"
-          
+
               echo "REDIS_HOST=${{ secrets.TEST_REDIS_HOST }}"
               echo "REDIS_PORT=${{ secrets.TEST_REDIS_PORT }}"
               echo "REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}"
 
+              echo "STORAGE_BASE=${{ secrets.TEST_STORAGE_BASE }}"
+              echo "STORAGE_URL=${{ secrets.TEST_STORAGE_URL }}"
               echo "APP_STORAGE_SECRET=${{ secrets.TEST_APP_STORAGE_SECRET_KEY }}"
-              echo "APP_STORAGE_BASE_URL=${{ secrets.TEST_STORAGE_URL }}"
-
-            } >> $GITHUB_ENV
+            } >> "$GITHUB_ENV"
           fi
 
           # export jar to workspace root for scp
@@ -128,77 +126,70 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
-          # 원격 서버에서 수행
           script: |
             set -euo pipefail
             cd "${{ env.DIR }}"
 
-            # 네트워크 보장
             docker network inspect "${{ env.NET }}" >/dev/null 2>&1 || docker network create "${{ env.NET }}"
 
-            # 브랜치별 .env 작성 (모든 주석 제거됨)
             if [ "${{ env.PROFILE }}" = "main" ]; then
-              cat > .env <<EOF
+              cat > .env <<'EOF'
             TZ=Asia/Seoul
             SPRING_PROFILES_ACTIVE=main
-
+            
             ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
-
+            
             MAIN_DB_URL=${{ env.DB_URL }}
             MAIN_DB_USER=${{ env.DB_USER }}
             MAIN_DB_PASSWORD=${{ env.DB_PASSWORD }}
-
+            
             MAIN_JWT_SECRET=${{ env.JWT_SECRET }}
             MAIN_JWT_ISSUER=${{ env.JWT_ISSUER }}
-
-            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
             
             MAIN_REDIS_HOST=${{ env.REDIS_HOST }}
             MAIN_REDIS_PORT=${{ env.REDIS_PORT }}
             MAIN_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
-
+            
+            MAIN_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            MAIN_STORAGE_URL=${{ env.STORAGE_URL }}
             APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
-            APP_STORAGE_BASE_URL=${{ env.APP_STORAGE_BASE_URL }}
             EOF
             else
-              cat > .env <<'EOF'
+            cat > .env <<'EOF'
             TZ=Asia/Seoul
             SPRING_PROFILES_ACTIVE=test
-
+            
             ADMIN_NUMBER=${{ env.ADMIN_NUMBER }}
             ADMIN_NAME=${{ env.ADMIN_NAME }}
             ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
-
+            
             TEST_DB_URL=${{ env.DB_URL }}
             TEST_DB_USER=${{ env.DB_USER }}
             TEST_DB_PASSWORD=${{ env.DB_PASSWORD }}
-
+            
             TEST_JWT_SECRET=${{ env.JWT_SECRET }}
             TEST_JWT_ISSUER=${{ env.JWT_ISSUER }}
-
-            TEST_STORAGE_BASE=${{ env.TEST_STORAGE_BASE }}
             
             TEST_REDIS_HOST=${{ env.REDIS_HOST }}
             TEST_REDIS_PORT=${{ env.REDIS_PORT }}
             TEST_REDIS_PASSWORD=${{ env.REDIS_PASSWORD }}
-
+            
+            TEST_STORAGE_BASE=${{ env.STORAGE_BASE }}
+            TEST_STORAGE_URL=${{ env.STORAGE_URL }}
             APP_STORAGE_SECRET_KEY=${{ env.APP_STORAGE_SECRET }}
-            APP_STORAGE_BASE_URL=${{ env.APP_STORAGE_BASE_URL }}
             EOF
             fi
-
-            # 기존 컨테이너 중지/삭제 후 이미지 빌드
+            
             docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
-
-            # 컨테이너 기동
+            
             docker run -d \
-              --name "${{ env.APP }}" \
-              --restart unless-stopped \
-              --env-file .env \
-              --network "${{ env.NET }}" \
-              -p "${{ env.PORT }}:8080" \
-              -v "${{ env.STORAGE_BASE }}:${{ env.STORAGE_BASE }}" \
-              "${{ env.APP }}:latest"
+            --name "${{ env.APP }}" \
+            --restart unless-stopped \
+            --env-file .env \
+            --network "${{ env.NET }}" \
+            -p "${{ env.PORT }}:8080" \
+            -v "${{ env.STORAGE_BASE }}:${{ env.STORAGE_BASE }}" \
+            "${{ env.APP }}:latest"
