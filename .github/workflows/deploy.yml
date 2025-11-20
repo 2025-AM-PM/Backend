@@ -128,15 +128,12 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ env.PASSWORD }}
           port: ${{ env.SSH_PORT }}
-          # 원격 서버에서 수행
           script: |
             set -euo pipefail
             cd "${{ env.DIR }}"
 
-            # 네트워크 보장
             docker network inspect "${{ env.NET }}" >/dev/null 2>&1 || docker network create "${{ env.NET }}"
 
-            # 브랜치별 .env 작성 (모든 주석 제거됨)
             if [ "${{ env.PROFILE }}" = "main" ]; then
               cat > .env <<EOF
             TZ=Asia/Seoul
@@ -189,11 +186,9 @@ jobs:
             EOF
             fi
 
-            # 기존 컨테이너 중지/삭제 후 이미지 빌드
             docker rm -f "${{ env.APP }}" 2>/dev/null || true
             docker build -t "${{ env.APP }}:latest" .
 
-            # 컨테이너 기동
             docker run -d \
               --name "${{ env.APP }}" \
               --restart unless-stopped \
