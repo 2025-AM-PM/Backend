@@ -6,15 +6,21 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-public class AuditorAwareImpl implements AuditorAware<String> {
+public class AuditorAwareImpl implements AuditorAware<Long> {
 
+    @SuppressWarnings("NullableProblems")
     @Override
-    public Optional<String> getCurrentAuditor() {
+    public Optional<Long> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (null == authentication || !authentication.isAuthenticated()) {
             return Optional.empty();
         }
-        UserAuth userAuth = (UserAuth) authentication.getPrincipal();
-        return Optional.of(userAuth.getUsername());
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof UserAuth userAuth)) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(userAuth.getId());
     }
 }

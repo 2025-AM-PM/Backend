@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
 
-    boolean existsByIdAndStudent_Id(Long exhibitId, Long studentId);
+    boolean existsByIdAndStudent_Id(Long postId, Long studentId);
 
     @Modifying
     @Query("update Post p set p.likes = p.likes + :delta where p.id = :postId")
