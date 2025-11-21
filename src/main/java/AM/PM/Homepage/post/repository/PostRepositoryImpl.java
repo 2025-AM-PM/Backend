@@ -3,7 +3,12 @@ package AM.PM.Homepage.post.repository;
 import static AM.PM.Homepage.post.domain.QPost.post;
 import static org.springframework.util.StringUtils.hasText;
 
+import AM.PM.Homepage.member.student.domain.QStudent;
+import AM.PM.Homepage.member.student.response.QStudentResponse;
+import AM.PM.Homepage.member.student.response.StudentResponse;
+import AM.PM.Homepage.post.response.PostDetailResponse;
 import AM.PM.Homepage.post.response.PostSummaryResponse;
+import AM.PM.Homepage.post.response.QPostDetailResponse;
 import AM.PM.Homepage.post.response.QPostSummaryResponse;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -12,6 +17,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,13 +45,10 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         post.likes,
                         post.views,
                         post.createdAt,
-                        post.updatedAt,
-                        post.createdBy,
-                        post.updatedBy
+                        post.updatedAt
                 )).from(post)
                 .where(
-                        titleContains(title),
-                        createdByContains(createdBy)
+                        titleContains(title)
                 ).orderBy(orderSpecifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -56,19 +59,51 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .select(post.count())
                 .from(post)
                 .where(
-                        titleContains(title),
-                        createdByContains(createdBy)
+                        titleContains(title)
                 );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchFirst);
     }
 
-    private BooleanExpression titleContains(String title) {
-        return hasText(title) ? post.title.containsIgnoreCase(title) : null;
+    @Override
+    public Optional<PostDetailResponse> findByIdWithStudent(Long postId) {
+        QStudent creator = new QStudent("creator");
+        QStudent updater = new QStudent("updater");
+
+        PostDetailResponse result = qf
+                .select(new QPostDetailResponse(
+                        post.id,
+                        post.title,
+                        post.content,
+                        post.category,
+                        post.likes,
+                        post.views,
+                        post.createdAt,
+                        post.updatedAt,
+                        new QStudentResponse(
+                                creator.id,
+                                creator.studentNumber,
+                                creator.studentName,
+                                creator.role
+                        ),
+                        new QStudentResponse(
+                                updater.id,
+                                updater.studentNumber,
+                                updater.studentName,
+                                updater.role
+                        )
+                ))
+                .from(post)
+                .leftJoin(creator).on(post.createdBy.eq(creator.id))
+                .leftJoin(updater).on(post.updatedBy.eq(updater.id))
+                .where(post.id.eq(postId))
+                .fetchOne();
+
+        return Optional.ofNullable(result);
     }
 
-    private BooleanExpression createdByContains(String createdBy) {
-        return hasText(createdBy) ? post.createdBy.containsIgnoreCase(createdBy) : null;
+    private BooleanExpression titleContains(String title) {
+        return hasText(title) ? post.title.containsIgnoreCase(title) : null;
     }
 
     private OrderSpecifier<?>[] getOrderSpecifiers(Pageable pageable) {

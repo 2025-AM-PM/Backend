@@ -1,20 +1,12 @@
 package AM.PM.Homepage.post.response;
 
-import AM.PM.Homepage.post.domain.Post;
+import AM.PM.Homepage.member.student.response.StudentResponse;
 import AM.PM.Homepage.post.domain.PostCategory;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.querydsl.core.annotations.QueryProjection;
 import java.time.LocalDateTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PostDetailResponse {
 
     private Long id;
@@ -25,21 +17,23 @@ public class PostDetailResponse {
     private Long views;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
+    private StudentResponse createBy;
+    private StudentResponse updatedBy;
 
-    public static PostDetailResponse from(Post post) {
-        return new PostDetailResponse(
-                post.getId(),
-                post.getTitle(),
-                post.getContent(),
-                post.getCategory(),
-                post.getLikes(),
-                post.getViews(),
-                post.getCreatedAt(),
-                post.getUpdatedAt(),
-                post.getCreatedBy(),
-                post.getUpdatedBy()
-        );
+    @QueryProjection
+
+    public PostDetailResponse(Long id, String title, String content, PostCategory category,
+                              Long likes, Long views, LocalDateTime createdAt, LocalDateTime updatedAt,
+                              StudentResponse createBy, StudentResponse updatedBy) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.category = category;
+        this.likes = likes;
+        this.views = views;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createBy = createBy;
+        this.updatedBy = updatedBy;
     }
 }

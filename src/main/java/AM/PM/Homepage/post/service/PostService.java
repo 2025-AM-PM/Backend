@@ -10,7 +10,7 @@ import AM.PM.Homepage.post.request.PostCreateRequest;
 import AM.PM.Homepage.post.request.PostUpdateRequest;
 import AM.PM.Homepage.post.response.PostDetailResponse;
 import AM.PM.Homepage.post.response.PostSummaryResponse;
-import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,9 +30,8 @@ public class PostService {
     }
 
     public PostDetailResponse getPost(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST, "postId=" + postId));
-        return PostDetailResponse.from(post);
+        return postRepository.findByIdWithStudent(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
     }
 
     public PostSummaryResponse createPost(PostCreateRequest request, Long studentId) {
