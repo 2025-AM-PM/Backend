@@ -2,6 +2,7 @@ package AM.PM.Homepage.member.auth.service;
 
 import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
+import AM.PM.Homepage.common.redis.AuthRedisStore;
 import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.auth.domain.SignupApplication;
 import AM.PM.Homepage.member.auth.domain.SignupApplicationStatus;
@@ -46,6 +47,7 @@ public class AuthService {
 
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final AuthRedisStore authRedisStore;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManager authenticationManager;
 
@@ -61,6 +63,11 @@ public class AuthService {
             String studentName = principal.getStudentName();
             StudentRole role = principal.getRole();
             Integer algorithmTier = algorithmGradeRepository.findTierByStudentId(studentId).orElse(null);
+
+            // 정지 여부 확인
+            if (authRedisStore.isBanned(studentId)) {
+                throw new CustomException(ErrorCode.FORBIDDEN, "정지된 계정입니다.");
+            }
 
             if (deviceId == null || deviceId.isBlank()) {
                 deviceId = UUID.randomUUID().toString();
@@ -126,30 +133,49 @@ public class AuthService {
 
     @PreAuthorize("hasAnyRole('PRESIDENT','SYSTEM_ADMIN')")
     public SignupApplicationProcessResponse approveSignup(SignupApplicationRequest request) {
-        var students = new ArrayList<Student>();
-        var applications = applicationRepository.findByStatus(SignupApplicationStatus.PENDING);
+        // 요청된 ID 집합
+        List<SignupApplication> applications = getSignupApplications(request);
 
+        // 상태 검증 + 승인 처리
+        List<Student> students = new ArrayList<>();
         for (SignupApplication app : applications) {
-            // TODO: requestIds 필터링 로직 개선 필요
-            if (!request.getApplicationIds().contains(app.getId())) {
-                throw new CustomException(ErrorCode.NOT_FOUND_APPLICATION, "applicationId=" + app.getId());
+            if (app.getStatus() != SignupApplicationStatus.PENDING) {
+                throw new CustomException(ErrorCode.FORBIDDEN, "PENDING 상태가 아닙니다. applicationId=" + app.getId());
             }
+
             app.approve();
             students.add(Student.signup(app.getStudentNumber(), app.getStudentName(), app.getStudentPassword()));
         }
+
         studentRepository.saveAll(students);
         return new SignupApplicationProcessResponse(students.size(), SignupApplicationStatus.APPROVED);
     }
 
     @PreAuthorize("hasAnyRole('PRESIDENT','SYSTEM_ADMIN')")
     public SignupApplicationProcessResponse rejectSignup(SignupApplicationRequest request) {
-        var applications = applicationRepository.findByStatus(SignupApplicationStatus.PENDING);
+        List<SignupApplication> applications = getSignupApplications(request);
+
         for (SignupApplication app : applications) {
-            if (!request.getApplicationIds().contains(app.getId())) {
-                throw new CustomException(ErrorCode.NOT_FOUND_APPLICATION, "applicationId=" + app.getId());
+            if (app.getStatus() != SignupApplicationStatus.PENDING) {
+                throw new CustomException(ErrorCode.FORBIDDEN, "PENDING 상태가 아닙니다. applicationId=" + app.getId());
             }
             app.reject();
         }
+
         return new SignupApplicationProcessResponse(applications.size(), SignupApplicationStatus.REJECTED);
+    }
+
+    private List<SignupApplication> getSignupApplications(SignupApplicationRequest request) {
+        List<Long> requestIds = request.getApplicationIds();
+        if (requestIds == null || requestIds.isEmpty()) {
+            throw new CustomException(ErrorCode.NOT_FOUND_APPLICATION, "applicationIds is empty");
+        }
+
+        List<SignupApplication> applications = applicationRepository.findAllById(requestIds);
+
+        if (applications.size() != requestIds.size()) {
+            throw new CustomException(ErrorCode.NOT_FOUND_APPLICATION, "일부 신청이 존재하지 않습니다. requestIds=" + requestIds);
+        }
+        return applications;
     }
 }

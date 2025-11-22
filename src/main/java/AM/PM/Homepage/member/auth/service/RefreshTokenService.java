@@ -4,7 +4,7 @@ import AM.PM.Homepage.common.exception.CustomException;
 import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.common.redis.AuthRedisStore;
 import AM.PM.Homepage.member.auth.response.ReissueResult;
-import AM.PM.Homepage.member.student.domain.StudentRole;
+import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.security.jwt.JwtUtil;
 import AM.PM.Homepage.util.CookieProvider;
@@ -40,10 +40,14 @@ public class RefreshTokenService {
     }
 
     /**
-     * 액세스 재발급(회전) - RT(쿠키)만으로 처리 - 저장된 (studentId, deviceId) 해시와 일치해야 함 - 회전: 기존 RT 삭제 → 새 RT 저장
+     * 액세스 재발급(회전)
+     * - RT(쿠키)만으로 처리
+     * - 저장된 (studentId, deviceId) 해시와 일치해야 함
+     * - 회전: 기존 RT 삭제 → 새 RT 저장
      */
     @Transactional
     public ReissueResult reissue(HttpServletRequest request, HttpServletResponse response) {
+        log.info("[리프레시 토큰 재발급 요청] 쿠키에서 리프레시 토큰 추출 시작");
         String refreshToken = extractRefreshToken(request.getCookies());
 
         // 만료/카테고리 체크
@@ -53,23 +57,22 @@ public class RefreshTokenService {
             throw new CustomException(ErrorCode.TOKEN_EXPIRED);
         }
 
-        if (!JwtTokenType.REFRESH_TOKEN.getValue().equals(jwtUtil.getCategory(refreshToken))) {
+        String category = jwtUtil.getCategory(refreshToken);
+        if (!JwtTokenType.REFRESH_TOKEN.getValue().equals(category)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN_CATEGORY);
         }
 
         // 식별 정보
-        Long studentId = jwtUtil.getId(refreshToken);          // subject(id)
-        String username = jwtUtil.getUsername(refreshToken);
-        StudentRole role = jwtUtil.getRole(refreshToken);
+        Long studentId = jwtUtil.getId(refreshToken);
         String deviceId = jwtUtil.getDeviceId(refreshToken);
         if (studentId == null) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         if (deviceId == null || deviceId.isBlank()) {
-            deviceId = UUID.randomUUID().toString();
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        // 存 RT 해시 비교(재사용/탈취 방지)
+        // 저장된 RT 해시 비교(재사용/탈취 방지)
         String storedHash = store.getRefreshHash(studentId, deviceId);
         String givenHash = AuthRedisStore.sha256Base64(refreshToken);
         if (storedHash == null || !storedHash.equals(givenHash)) {
@@ -78,26 +81,27 @@ public class RefreshTokenService {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        if (!studentRepository.existsById(studentId)) {
-            throw new CustomException(ErrorCode.NOT_FOUND_STUDENT);
-        }
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
 
         // 새 페어 발급
-        String newAccess = jwtUtil.generateAccessToken(studentId, username, role);
-        String newRefresh = jwtUtil.generateRefreshToken(studentId, username, role, deviceId);
+        String newAccess = jwtUtil.generateAccessToken(studentId, student.getStudentNumber(), student.getRole());
+        String newRefresh = jwtUtil.generateRefreshToken(studentId, student.getStudentNumber(), student.getRole(), deviceId);
+        log.info("[리프레시 토큰 재발급 성공] 새 토큰 생성 완료: studentId={}, deviceId={}", studentId, deviceId);
 
         // 회전
         store.deleteRefresh(studentId, deviceId);
         registerRefreshToken(studentId, deviceId, newRefresh);
+        log.info("[리프레시 토큰 재발급 성공] 기존 리프레시 토큰 삭제 및 신규 해시 저장 완료: studentId={}, deviceId={}", studentId, deviceId);
 
         // 응답 세팅
         ResponseCookie cookie = buildRefreshCookie(newRefresh, false, "Lax");
-        log.info("[재발급 완료] studentId={}, deviceId={}", studentId, deviceId);
+        log.info("[리프레시 토큰 재발급 완료] studentId={}, deviceId={}", studentId, deviceId);
         return new ReissueResult(newAccess, cookie, deviceId);
     }
 
     private ResponseCookie buildRefreshCookie(String refreshToken, boolean secure, String sameSite) {
-        return ResponseCookie.from("refresh", refreshToken)
+        return ResponseCookie.from(REFRESH_COOKIE, refreshToken)
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite(sameSite)
@@ -115,6 +119,7 @@ public class RefreshTokenService {
                 if (c.getValue() == null || c.getValue().isBlank()) {
                     throw new CustomException(ErrorCode.REFRESH_TOKEN_REQUIRED);
                 }
+                log.info("[리프레시 토큰 추출 성공] refresh 쿠키 발견");
                 return c.getValue();
             }
         }
@@ -124,6 +129,7 @@ public class RefreshTokenService {
     // 단일 디바이스 로그아웃
     @Transactional
     public ResponseCookie logout(Long studentId, String deviceId, String accessToken) {
+        log.info("[로그아웃 요청] studentId={}, deviceId={}", studentId, deviceId);
         // AT 블랙리스트(남은 TTL)
         if (accessToken != null && !accessToken.isBlank()) {
             jwtUtil.blacklistAccess(accessToken);
@@ -134,13 +140,14 @@ public class RefreshTokenService {
             store.deleteRefresh(studentId, deviceId);
             log.info("[로그아웃] refresh 삭제: studentId={}, deviceId={}", studentId, deviceId);
         }
-        log.info("[로그아웃] 완료");
+        log.info("[로그아웃] 완료: studentId={}, deviceId={}", studentId, deviceId);
         return clearRefreshCookie(false, "Lax");
     }
 
     // 전체 로그아웃
     @Transactional
     public ResponseCookie logoutAll(Long studentId, String accessToken) {
+        log.info("[전체 로그아웃 요청] studentId={}", studentId);
         if (accessToken != null && !accessToken.isBlank()) {
             jwtUtil.blacklistAccess(accessToken);
             String jti = jwtUtil.getJti(accessToken);
@@ -150,7 +157,7 @@ public class RefreshTokenService {
             store.deleteAllRefresh(studentId);
             log.info("[전체 로그아웃] refresh 삭제: studentId={}", studentId);
         }
-        log.info("[전체 로그아웃] 완료");
+        log.info("[전체 로그아웃] 완료: studentId={}", studentId);
         return clearRefreshCookie(false, "Lax");
     }
 
