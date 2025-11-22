@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 import org.springframework.data.repository.query.Param;
 
-public interface AlgorithmGradeRepository extends JpaRepository<AlgorithmProfile, Long> {
+public interface AlgorithmGradeRepository extends JpaRepository<AlgorithmProfile, Long>, AlgorithmGradeRepositoryCustom {
 
     @Query("select a.tier from AlgorithmProfile a where a.id = :studentId")
     Optional<Integer> findTierByStudentId(@Param("studentId") Long studentId);

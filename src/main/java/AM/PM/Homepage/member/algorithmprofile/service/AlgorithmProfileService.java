@@ -5,11 +5,13 @@ import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.algorithmprofile.domain.AlgorithmProfile;
 import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.algorithmprofile.request.VerificationCodeRequest;
+import AM.PM.Homepage.member.algorithmprofile.response.AlgorithmProfileResponse;
 import AM.PM.Homepage.member.algorithmprofile.response.SolvedAcInformationResponse;
 import AM.PM.Homepage.member.algorithmprofile.response.VerificationCodeResponse;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.member.student.response.StudentInformationResponse;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,5 +101,10 @@ public class AlgorithmProfileService {
                 .studentNumber(student.getStudentNumber())
                 .solvedAcInformationResponse(solved)
                 .build();
+    }
+
+    // solved.ac 인증된 학생 중, 최고 티어 10명 가져오기
+    public List<AlgorithmProfileResponse> getTopTiers() {
+        return algorithmGradeRepository.findTopTier(10);
     }
 }
