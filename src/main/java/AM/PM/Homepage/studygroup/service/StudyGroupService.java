@@ -47,36 +47,54 @@ public class StudyGroupService {
     // 스터디 그룹 조회
     @Transactional(readOnly = true)
     public Page<StudyGroupSearchResponse> getStudyGroups(String title, StudyGroupStatus status, Pageable pageable) {
+        log.info("[스터디 그룹 조회] title={}, status={}, page={}, size={}",
+                title, status, pageable.getPageNumber(), pageable.getPageSize());
+
         if (title == null || title.isBlank()) {
-            return studyGroupRepository.findAllByStatus(status, pageable)
+            Page<StudyGroupSearchResponse> result = studyGroupRepository.findAllByStatus(status, pageable)
                     .map(StudyGroupSearchResponse::from);
+            log.info("[스터디 그룹 조회 완료] 조회된 그룹={}개, 전체={}개", result.getNumberOfElements(), result.getTotalElements());
+            return result;
         }
-        return studyGroupRepository.findAllByTitleContainsIgnoreCaseAndStatus(title, status, pageable)
+        Page<StudyGroupSearchResponse> result = studyGroupRepository.findAllByTitleContainsIgnoreCaseAndStatus(title, status, pageable)
                 .map(StudyGroupSearchResponse::from);
+        log.info("[스터디 그룹 조회 완료] 조회된 그룹={}개, 전체={}개", result.getNumberOfElements(), result.getTotalElements());
+        return result;
     }
 
     // 내 스터디 목록 조회
     @Transactional(readOnly = true)
     public List<MyStudyGroupResponse> getMyStudyGroups(Long userId) {
-        return studyGroupRepository.findAllByUserId(userId)
+        log.info("[내 스터디 목록 조회] userId={}", userId);
+
+        List<MyStudyGroupResponse> result = studyGroupRepository.findAllByUserId(userId)
                 .stream()
                 .map(MyStudyGroupResponse::from)
                 .toList();
+
+        log.info("[내 스터디 목록 조회 완료] userId={}, 스터디 개수={}개", userId, result.size());
+        return result;
     }
 
     // 스터디 그룹 상세 조회
     @Transactional(readOnly = true)
     public StudyGroupDetailResponse getStudyGroupDetail(Long groupId) {
+        log.info("[스터디 그룹 상세 조회] groupId={}", groupId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
         List<StudyGroupMember> members = studyGroupMemberRepository.findAllByStudyGroup(studyGroup);
+
+        log.info("[스터디 그룹 상세 조회 완료] groupId={}, 멤버 수={}명", groupId, members.size());
         return StudyGroupDetailResponse.from(studyGroup, members);
     }
 
     // 스터디 지원자 목록 조회
     @Transactional(readOnly = true)
     public List<StudyGroupApplicantResponse> getApplicants(Long groupId, Long userId) {
+        log.info("[스터디 지원자 목록 조회] groupId={}, userId={}", groupId, userId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -84,24 +102,32 @@ public class StudyGroupService {
             throw new CustomException(ErrorCode.FORBIDDEN_GROUP_LEADER_ONLY);
         }
 
-        return applicationRepository.findAllByStudyGroupId(groupId)
+        List<StudyGroupApplicantResponse> result = applicationRepository.findAllByStudyGroupId(groupId)
                 .stream()
                 .map(StudyGroupApplicantResponse::from)
                 .toList();
+
+        log.info("[스터디 지원자 목록 조회 완료] groupId={}, 지원자 수={}명", groupId, result.size());
+        return result;
     }
 
     // 내가 지원한 스터디 조회
     @Transactional(readOnly = true)
     public List<MyAppliedStudyGroupResponse> getMyAppliedStudyGroups(Long userId) {
-        return applicationRepository.findAllByStudentId(userId)
+        log.info("[내가 지원한 스터디 조회] userId={}", userId);
+
+        List<MyAppliedStudyGroupResponse> result = applicationRepository.findAllByStudentId(userId)
                 .stream()
                 .map(MyAppliedStudyGroupResponse::from)
                 .toList();
+
+        log.info("[내가 지원한 스터디 조회 완료] userId={}, 지원한 스터디={}개", userId, result.size());
+        return result;
     }
 
     // 새로운 스터디 그룹 생성
     public StudyGroupCreateResponse createStudyGroup(StudyGroupCreateRequest request, Long userId) {
-        log.info("[스터디 생성] 요청자 ID={}, 제목={}", userId, request.getTitle());
+        log.info("[스터디 생성] userId={}, 제목={}", userId, request.getTitle());
 
         Student user = studentRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDENT));
@@ -124,7 +150,7 @@ public class StudyGroupService {
         studyGroupRepository.save(studyGroup);
         studyGroupMemberRepository.save(leader);
 
-        log.info("[스터디 생성 완료] groupId={}", studyGroup.getId());
+        log.info("[스터디 생성 완료] groupId={}, userId={}", studyGroup.getId(), userId);
         return StudyGroupCreateResponse.from(studyGroup);
     }
 
@@ -165,7 +191,7 @@ public class StudyGroupService {
                 .build();
 
         applicationRepository.save(application);
-        log.info("[스터디 신청 완료] applicationId={}", application.getId());
+        log.info("[스터디 신청 완료] applicationId={}, userId={}, groupId={}", application.getId(), userId, groupId);
         return StudyGroupApplyResponse.from(application);
     }
 
@@ -199,12 +225,14 @@ public class StudyGroupService {
                 .build();
 
         studyGroupMemberRepository.save(member);
-        log.info("[승인 완료] applicationId={}, studentId={}", applicationId, applicant.getId());
+        log.info("[승인 완료] applicationId={}, studentId={}, groupId={}", applicationId, applicant.getId(), groupId);
         return ApplicationApproveResponse.from(application);
     }
 
     // 스터디 지원 거절
     public void rejectApplication(Long groupId, Long applicationId, Long userId) {
+        log.info("[스터디 거절] userId={}, groupId={}, applicationId={}", userId, groupId, applicationId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -222,11 +250,13 @@ public class StudyGroupService {
         }
 
         application.reject();
-        log.info("[거절 완료] applicationId={}, userId={}", applicationId, userId);
+        log.info("[거절 완료] applicationId={}, userId={}, groupId={}", applicationId, userId, groupId);
     }
 
     // 스터디 그룹 수정
     public StudyGroupUpdateResponse updateStudyGroup(StudyGroupUpdateRequest request, Long groupId, Long userId) {
+        log.info("[스터디 수정] groupId={}, userId={}", groupId, userId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -246,6 +276,8 @@ public class StudyGroupService {
     }
 
     public StudyGroupUpdateResponse updateStudyGroupStatus(StudyGroupStatusUpdateRequest request, Long groupId, Long userId) {
+        log.info("[모집 상태 변경] groupId={}, userId={}, status={}", groupId, userId, request.getStatus());
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -257,12 +289,14 @@ public class StudyGroupService {
         }
 
         studyGroup.setStatus(request.getStatus());
-        log.info("[모집 상태 변경] groupId={}, userId={}, status={}", groupId, userId, request.getStatus());
+        log.info("[모집 상태 변경 완료] groupId={}, userId={}, status={}", groupId, userId, request.getStatus());
         return StudyGroupUpdateResponse.from(studyGroup);
     }
 
     // 스터디 그룹 삭제
     public void deleteStudyGroup(Long groupId, Long userId) {
+        log.info("[스터디 삭제] groupId={}, userId={}", groupId, userId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -276,6 +310,8 @@ public class StudyGroupService {
 
     // 스터디 지원 취소
     public void deleteStudyGroupApplication(Long groupId, Long applicationId, Long userId) {
+        log.info("[스터디 신청 취소] applicationId={}, groupId={}, userId={}", applicationId, groupId, userId);
+
         StudyGroupApplication application = applicationRepository.findByIdAndStudyGroupId(applicationId, groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_APPLICATION));
 
@@ -289,6 +325,8 @@ public class StudyGroupService {
 
     // 스터디 탈퇴
     public void leaveStudyGroup(Long groupId, Long userId) {
+        log.info("[스터디 탈퇴] groupId={}, userId={}", groupId, userId);
+
         StudyGroupMember member = studyGroupMemberRepository.findByStudyGroupIdAndStudentId(groupId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -302,6 +340,8 @@ public class StudyGroupService {
 
     // 스터디 멤버 강제 탈퇴
     public void removeMember(Long groupId, Long groupMemberId, Long userId) {
+        log.info("[멤버 강제 탈퇴] groupId={}, memberId={}, userId={}", groupId, groupMemberId, userId);
+
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_STUDY_GROUP));
 
@@ -324,3 +364,4 @@ public class StudyGroupService {
         log.info("[멤버 강제 탈퇴 완료] groupId={}, memberId={}, userId={}", groupId, groupMemberId, userId);
     }
 }
+
