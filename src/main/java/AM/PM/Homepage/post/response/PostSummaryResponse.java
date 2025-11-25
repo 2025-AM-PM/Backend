@@ -2,11 +2,14 @@ package AM.PM.Homepage.post.response;
 
 import AM.PM.Homepage.post.domain.Post;
 import AM.PM.Homepage.post.domain.PostCategory;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.querydsl.core.annotations.QueryProjection;
 import java.time.LocalDateTime;
 import lombok.Getter;
 
 @Getter
+@JsonInclude(Include.NON_NULL)
 public class PostSummaryResponse {
 
     private Long id;
@@ -15,7 +18,7 @@ public class PostSummaryResponse {
     private Long likes;
     private Long views;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String author;
 
     public static PostSummaryResponse from(Post post) {
         return new PostSummaryResponse(
@@ -25,19 +28,19 @@ public class PostSummaryResponse {
                 post.getLikes(),
                 post.getViews(),
                 post.getCreatedAt(),
-                post.getUpdatedAt()
+                null
         );
     }
 
     @QueryProjection
     public PostSummaryResponse(Long id, String title, PostCategory category, Long likes,
-                               Long views, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                               Long views, LocalDateTime createdAt, String author) {
         this.id = id;
         this.title = title;
         this.category = category;
         this.likes = likes;
         this.views = views;
         this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+        this.author = author;
     }
 }

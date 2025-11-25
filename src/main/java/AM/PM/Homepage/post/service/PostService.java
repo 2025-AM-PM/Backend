@@ -5,6 +5,7 @@ import AM.PM.Homepage.common.exception.ErrorCode;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import AM.PM.Homepage.post.domain.Post;
+import AM.PM.Homepage.post.domain.PostCategory;
 import AM.PM.Homepage.post.repository.PostRepository;
 import AM.PM.Homepage.post.request.PostCreateRequest;
 import AM.PM.Homepage.post.request.PostUpdateRequest;
@@ -26,11 +27,11 @@ public class PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
 
-    public Page<PostSummaryResponse> searchPost(String title, String createdBy, Pageable pageable) {
+    public Page<PostSummaryResponse> searchPost(String title, PostCategory category, Pageable pageable) {
         log.info("게시글 검색 시작: 제목={}, 작성자={}, 페이지={}, 크기={}",
-                title, createdBy, pageable.getPageNumber(), pageable.getPageSize());
+                title, category, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<PostSummaryResponse> result = postRepository.search(title, createdBy, pageable);
+        Page<PostSummaryResponse> result = postRepository.search(title, category, pageable);
 
         log.info("게시글 검색 완료: 조회된 게시글={}개, 전체={}개, 전체 페이지={}",
                 result.getNumberOfElements(), result.getTotalElements(), result.getTotalPages());
