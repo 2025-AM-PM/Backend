@@ -5,7 +5,7 @@ import static org.springframework.util.StringUtils.hasText;
 
 import AM.PM.Homepage.member.student.domain.QStudent;
 import AM.PM.Homepage.member.student.response.QStudentResponse;
-import AM.PM.Homepage.member.student.response.StudentResponse;
+import AM.PM.Homepage.post.domain.PostCategory;
 import AM.PM.Homepage.post.response.PostDetailResponse;
 import AM.PM.Homepage.post.response.PostSummaryResponse;
 import AM.PM.Homepage.post.response.QPostDetailResponse;
@@ -32,11 +32,11 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     private final JPAQueryFactory qf;
 
     @Override
-    public Page<PostSummaryResponse> search(String title, String createdBy, Pageable pageable) {
-        // 정렬 조건
+    public Page<PostSummaryResponse> search(String title, PostCategory category, Pageable pageable) {
+        QStudent creator = new QStudent("creator");
+
         OrderSpecifier<?>[] orderSpecifiers = getOrderSpecifiers(pageable);
 
-        // content 쿼리
         List<PostSummaryResponse> content = qf
                 .select(new QPostSummaryResponse(
                         post.id,
@@ -45,10 +45,13 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         post.likes,
                         post.views,
                         post.createdAt,
-                        post.updatedAt
-                )).from(post)
+                        creator.studentName
+                ))
+                .from(post)
+                .leftJoin(creator).on(post.createdBy.eq(creator.id))
                 .where(
-                        titleContains(title)
+                        titleContains(title),
+                        categoryEq(category)
                 ).orderBy(orderSpecifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -104,6 +107,10 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     private BooleanExpression titleContains(String title) {
         return hasText(title) ? post.title.containsIgnoreCase(title) : null;
+    }
+
+    private BooleanExpression categoryEq(PostCategory category) {
+        return category != null ? post.category.eq(category) : null;
     }
 
     private OrderSpecifier<?>[] getOrderSpecifiers(Pageable pageable) {
