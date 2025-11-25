@@ -1,5 +1,6 @@
 package AM.PM.Homepage.post.controller;
 
+import AM.PM.Homepage.post.domain.PostCategory;
 import AM.PM.Homepage.post.request.PostCreateRequest;
 import AM.PM.Homepage.post.request.PostUpdateRequest;
 import AM.PM.Homepage.post.response.PostDetailResponse;
@@ -36,11 +37,11 @@ public class PostController {
     // 게시글 검색 페이지네이션
     @GetMapping
     public ResponseEntity<Page<PostSummaryResponse>> search(
-            @RequestParam(name="title", required = false) String title,
-            @RequestParam(name="createdBy", required = false) String createdBy,
+            @RequestParam(name = "title", required = false) String title,
+            @RequestParam(name = "createdBy", required = false) PostCategory category,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(postService.searchPost(title, createdBy, pageable));
+        return ResponseEntity.ok(postService.searchPost(title, category, pageable));
     }
 
     // 특정 게시글 id로 조회
