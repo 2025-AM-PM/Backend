@@ -32,7 +32,11 @@ public class AlgorithmGradeRepositoryCustomImpl implements AlgorithmGradeReposit
                 .innerJoin(student.baekjoonTier, profile)
                 .where(student.baekjoonTier.isNotNull()) // 미인증 제외
                 .where(student.id.ne(1L)) // 초기 어드민 제외
-                .orderBy(profile.tier.desc())
+                .orderBy(
+                        profile.rating.desc(),
+                        profile.tier.desc(),
+                        profile.solvedCount.desc()
+                )
                 .limit(count)
                 .fetch();
     }
