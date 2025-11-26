@@ -38,7 +38,7 @@ public class PostController {
     @GetMapping
     public ResponseEntity<Page<PostSummaryResponse>> search(
             @RequestParam(name = "title", required = false) String title,
-            @RequestParam(name = "createdBy", required = false) PostCategory category,
+            @RequestParam(name = "category", required = false) PostCategory category,
             Pageable pageable
     ) {
         return ResponseEntity.ok(postService.searchPost(title, category, pageable));
