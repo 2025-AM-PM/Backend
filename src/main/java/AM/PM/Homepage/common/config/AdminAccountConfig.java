@@ -46,9 +46,10 @@ public class AdminAccountConfig {
             try {
                 String encoded = passwordEncoder.encode(adminPassword);
                 Student admin = new Student(adminNumber, SYSTEM_ADMIN, adminName, encoded);
-                studentRepository.save(admin);
+                AlgorithmProfile adminProfile = new AlgorithmProfile(null, 22, 0, 0, null);
+                admin.linkAlgorithmProfile(adminProfile);
 
-                AlgorithmProfile adminProfile = new AlgorithmProfile(admin.getId(), 22, 0, 0, admin);
+                studentRepository.save(admin);
                 algorithmGradeRepository.save(adminProfile);
             } catch (Exception ignore) {
                 // 무시
