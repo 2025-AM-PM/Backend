@@ -2,6 +2,8 @@ package AM.PM.Homepage.common.config;
 
 import static AM.PM.Homepage.member.student.domain.StudentRole.SYSTEM_ADMIN;
 
+import AM.PM.Homepage.member.algorithmprofile.domain.AlgorithmProfile;
+import AM.PM.Homepage.member.algorithmprofile.repository.AlgorithmGradeRepository;
 import AM.PM.Homepage.member.student.domain.Student;
 import AM.PM.Homepage.member.student.repository.StudentRepository;
 import jakarta.annotation.PostConstruct;
@@ -28,6 +30,7 @@ public class AdminAccountConfig {
     static class AdminAccountService {
         private final StudentRepository studentRepository;
         private final BCryptPasswordEncoder passwordEncoder;
+        private final AlgorithmGradeRepository algorithmGradeRepository;
 
         @Value("${account.admin.number}")
         private String adminNumber;
@@ -37,12 +40,16 @@ public class AdminAccountConfig {
         private String adminPassword;
 
         public void doInit() {
-            if (studentRepository.existsByStudentNumber(adminNumber)) {
-                return;
+            try {
+                String encoded = passwordEncoder.encode(adminPassword);
+                Student admin = new Student(adminNumber, SYSTEM_ADMIN, adminName, encoded);
+                studentRepository.save(admin);
+
+                AlgorithmProfile adminProfile = new AlgorithmProfile(admin.getId(), 22, 0, 0, admin);
+                algorithmGradeRepository.save(adminProfile);
+            } catch (Exception ignore) {
+                // 무시
             }
-            String encoded = passwordEncoder.encode(adminPassword);
-            Student admin = new Student(adminNumber, SYSTEM_ADMIN, adminName, encoded);
-            studentRepository.save(admin);
         }
     }
 }
