@@ -33,10 +33,10 @@ public class Post extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(nullable = false)
     private String content;
 
     @Enumerated(EnumType.STRING)
