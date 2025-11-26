@@ -62,7 +62,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .select(post.count())
                 .from(post)
                 .where(
-                        titleContains(title)
+                        titleContains(title),
+                        categoryEq(category)
                 );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchFirst);
