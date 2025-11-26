@@ -40,6 +40,9 @@ public class AdminAccountConfig {
         private String adminPassword;
 
         public void doInit() {
+            if(studentRepository.existsByStudentNumber(adminNumber)) {
+                return;
+            }
             try {
                 String encoded = passwordEncoder.encode(adminPassword);
                 Student admin = new Student(adminNumber, SYSTEM_ADMIN, adminName, encoded);
