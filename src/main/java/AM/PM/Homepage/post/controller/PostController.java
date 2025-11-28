@@ -75,7 +75,7 @@ public class PostController {
 
     // 게시글 수정. 본인 or 관리자만
     @PutMapping("/{postId}")
-    @PreAuthorize("@postAuthz.isOwner(#postId, authentication) or hasAnyRole('SYSTEM_ADMIN')")
+    @PreAuthorize("@postAuthz.isOwner(#postId) or hasAnyRole('SYSTEM_ADMIN')")
     public ResponseEntity<PostSummaryResponse> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request
@@ -85,7 +85,7 @@ public class PostController {
 
     // 게시글 삭제. 본인 or 관리자만
     @DeleteMapping("/{postId}")
-    @PreAuthorize("@postAuthz.isOwner(#postId, authentication) or hasAnyRole('SYSTEM_ADMIN')")
+    @PreAuthorize("@postAuthz.isOwner(#postId) or hasAnyRole('SYSTEM_ADMIN')")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long postId
     ) {
