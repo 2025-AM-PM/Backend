@@ -54,6 +54,7 @@ public class StudentService {
                 .studentId(id)
                 .studentName(student.getStudentName())
                 .studentNumber(student.getStudentNumber())
+                .role(student.getRole().name())
                 .studentTier(baekjoonTier != null ? baekjoonTier.getTier() : null)
                 .build();
     }
